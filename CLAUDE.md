@@ -63,4 +63,14 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
 - Ao final de cada sessão, atualizar a seção "Status atual" abaixo
 
 ## Status atual
-- [ ] Projeto ainda não iniciado — começar pelo item 1 do roadmap
+- [x] Item 1 do roadmap concluído: projeto Vite + React + TypeScript criado,
+  cliente Supabase configurado (`src/lib/supabase.ts`), autenticação por
+  e-mail/senha funcionando (`AuthContext`, tela de `Login`, `ProtectedRoute`),
+  Git local inicializado com commit inicial. Testado no navegador: tentativa de
+  login chega ao Supabase e retorna erro de credenciais corretamente (ainda não
+  há usuários cadastrados no projeto Supabase).
+- [ ] Pendente: criar repositório no GitHub e conectar (usuário optou por
+  Git local + GitHub); cadastrar o primeiro usuário Admin/RH no Supabase Auth
+  para testar login real
+- [ ] Próximo: item 2 do roadmap — modelo de dados + módulo de funcionários
+  (CRUD completo), incluindo RLS nas tabelas desde o início
