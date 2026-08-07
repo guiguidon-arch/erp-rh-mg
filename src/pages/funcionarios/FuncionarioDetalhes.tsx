@@ -24,6 +24,7 @@ const tipoHistoricoLabel: Record<HistoricoFuncionario['tipo'], string> = {
   reajuste_salarial: 'Reajuste salarial',
   mudanca_obra: 'Mudança de obra',
   mudanca_status: 'Mudança de status',
+  mudanca_tipo_contrato: 'Mudança de tipo de contrato',
   outro: 'Outro',
 }
 

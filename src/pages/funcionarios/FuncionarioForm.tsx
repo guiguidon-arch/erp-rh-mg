@@ -109,6 +109,14 @@ export default function FuncionarioForm() {
         valor_novo: salarioNovo != null ? String(salarioNovo) : '—',
       })
     }
+    if (form.tipo_contrato !== (original.tipo_contrato ?? '')) {
+      entradas.push({
+        tipo: 'mudanca_tipo_contrato',
+        campo: 'tipo_contrato',
+        valor_anterior: original.tipo_contrato ?? '—',
+        valor_novo: form.tipo_contrato || '—',
+      })
+    }
     if (form.obra_id !== (original.obra_id ?? '')) {
       const obraAnterior = obras.find((o) => o.id === original.obra_id)?.nome ?? '—'
       const obraNova = obras.find((o) => o.id === form.obra_id)?.nome ?? '—'

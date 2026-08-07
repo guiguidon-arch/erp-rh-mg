@@ -70,7 +70,13 @@ export interface DocumentoFuncionario {
   created_at: string
 }
 
-export type TipoHistorico = 'promocao' | 'reajuste_salarial' | 'mudanca_obra' | 'mudanca_status' | 'outro'
+export type TipoHistorico =
+  | 'promocao'
+  | 'reajuste_salarial'
+  | 'mudanca_obra'
+  | 'mudanca_status'
+  | 'mudanca_tipo_contrato'
+  | 'outro'
 
 export interface HistoricoFuncionario {
   id: string
