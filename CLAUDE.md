@@ -69,8 +69,27 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   Git local inicializado com commit inicial. Testado no navegador: tentativa de
   login chega ao Supabase e retorna erro de credenciais corretamente (ainda não
   há usuários cadastrados no projeto Supabase).
-- [ ] Pendente: criar repositório no GitHub e conectar (usuário optou por
-  Git local + GitHub); cadastrar o primeiro usuário Admin/RH no Supabase Auth
-  para testar login real
-- [ ] Próximo: item 2 do roadmap — modelo de dados + módulo de funcionários
-  (CRUD completo), incluindo RLS nas tabelas desde o início
+- [x] Primeiro usuário Admin/RH criado no Supabase Auth (guilherme@mgemp.com) e
+  login testado com sucesso pelo usuário
+- [x] Item 2 do roadmap (parcial): módulo de funcionários completo — tabelas
+  `obras`, `funcionarios`, `dependentes`, `historico_funcionario` (migrations em
+  `supabase/migrations/0001_funcionarios.sql` e `0002_tipo_contrato.sql`), CRUD
+  de obras e funcionários, filtro por obra e status, cadastro de dependentes,
+  histórico automático de mudanças de função/salário/obra/status. Testado e
+  aprovado pelo usuário no navegador.
+- [x] Módulo de documentos (item 2 do roadmap) iniciado: upload de documentos
+  por funcionário com categoria e data de vencimento (aviso visual de
+  vencido/vencendo em breve), armazenado no Supabase Storage (bucket privado
+  `documentos-funcionarios`, RLS restrita a usuários autenticados). Migration em
+  `supabase/migrations/0003_documentos.sql`. Ainda não testado no navegador —
+  aguardando o usuário rodar a migration.
+- [ ] Pendente: usuário vai enviar 4 modelos de documento (ficha de registro,
+  contrato de experiência, contrato de prestação de serviços, ficha de EPI)
+  para eu recriar como geração automática de PDF (decisão do usuário: PDF
+  direto no sistema, não preenchimento de Word — ele quer os documentos já
+  prontos para assinatura eletrônica). Isso adianta o item 3 do roadmap.
+- [ ] Pendente: criar repositório no GitHub e conectar (GitHub estava fora do
+  ar em 2026-08-06; usuário decidiu seguir só com Git local por enquanto)
+- [ ] Pendente: usuário vai mandar a logo da empresa para colocar no canto
+  superior esquerdo (`public/logo.png`, já preparado no `Layout.tsx` — some
+  automaticamente se o arquivo não existir)
