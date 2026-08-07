@@ -14,34 +14,52 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div>
       <header
+        className="card"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 24px',
-          borderBottom: '1px solid var(--border)',
+          padding: '14px 28px',
+          borderRadius: 0,
+          borderTop: 'none',
+          borderLeft: 'none',
+          borderRight: 'none',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
         }}
       >
-        <nav style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}>
-            <img src="/logo.png" alt="" style={{ height: 28, width: 'auto' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
-            <strong>ERP RH</strong>
+        <nav style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
+            <img
+              src="/logo.png"
+              alt=""
+              style={{ height: 32, width: 'auto' }}
+              onError={(e) => (e.currentTarget.style.display = 'none')}
+            />
+            <strong style={{ fontSize: 15, letterSpacing: 0.2 }}>ERP RH</strong>
           </Link>
-          <NavLink to="/funcionarios" style={linkStyle}>
-            Funcionários
-          </NavLink>
-          <NavLink to="/obras" style={linkStyle}>
-            Obras
-          </NavLink>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <NavLink to="/funcionarios" style={linkStyle}>
+              Funcionários
+            </NavLink>
+            <NavLink to="/obras" style={linkStyle}>
+              Obras
+            </NavLink>
+          </div>
         </nav>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{user?.email}</span>
           <button type="button" onClick={() => signOut()}>
             Sair
           </button>
         </div>
       </header>
-      <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>{children}</main>
+      <main style={{ padding: '32px 24px', maxWidth: 1100, margin: '0 auto' }}>
+        <div className="card" style={{ padding: 32 }}>
+          {children}
+        </div>
+      </main>
     </div>
   )
 }

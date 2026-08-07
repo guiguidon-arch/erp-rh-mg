@@ -28,9 +28,19 @@ export default function Login() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h1 style={{ marginBottom: 8 }}>ERP RH — Login</h1>
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
+      <form
+        onSubmit={handleSubmit}
+        className="card"
+        style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 12, padding: 32 }}
+      >
+        <img
+          src="/logo.png"
+          alt=""
+          style={{ height: 48, width: 'auto', margin: '0 auto 12px' }}
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
+        <h1 style={{ marginBottom: 8, fontSize: 22, textAlign: 'center' }}>ERP RH</h1>
 
         <label htmlFor="email">E-mail</label>
         <input
@@ -52,9 +62,9 @@ export default function Login() {
           autoComplete="current-password"
         />
 
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
+        {error && <p className="error-text">{error}</p>}
 
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="primary" disabled={submitting} style={{ marginTop: 8 }}>
           {submitting ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
