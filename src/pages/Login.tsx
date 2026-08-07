@@ -2,6 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
+function traduzirErro(mensagem: string): string {
+  if (mensagem.includes('Invalid login credentials')) return 'E-mail ou senha inválidos.'
+  if (mensagem.includes('Email not confirmed')) return 'Este e-mail ainda não foi confirmado. Confirme antes de entrar.'
+  if (mensagem.toLowerCase().includes('fetch')) return 'Não foi possível conectar ao servidor. Verifique sua internet.'
+  return mensagem
+}
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,7 +27,7 @@ export default function Login() {
     setSubmitting(false)
 
     if (signInError) {
-      setError('E-mail ou senha inválidos.')
+      setError(traduzirErro(signInError))
       return
     }
 
