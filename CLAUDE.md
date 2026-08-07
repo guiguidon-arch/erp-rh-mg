@@ -77,19 +77,30 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   de obras e funcionários, filtro por obra e status, cadastro de dependentes,
   histórico automático de mudanças de função/salário/obra/status. Testado e
   aprovado pelo usuário no navegador.
-- [x] Módulo de documentos (item 2 do roadmap) iniciado: upload de documentos
-  por funcionário com categoria e data de vencimento (aviso visual de
+- [x] Módulo de documentos (item 2 do roadmap): upload de documentos por
+  funcionário com categoria e data de vencimento (aviso visual de
   vencido/vencendo em breve), armazenado no Supabase Storage (bucket privado
   `documentos-funcionarios`, RLS restrita a usuários autenticados). Migration em
-  `supabase/migrations/0003_documentos.sql`. Ainda não testado no navegador —
-  aguardando o usuário rodar a migration.
+  `supabase/migrations/0003_documentos.sql`. Testado e aprovado pelo usuário.
+- [x] Histórico de alterações corrigido para também registrar mudança de tipo
+  de contrato (bug encontrado pelo usuário em teste manual). Migration
+  `0004_historico_tipo_contrato.sql`.
+- [x] Logo da empresa (M&G Empreendimentos) adicionada em `public/logo.png`,
+  aparece no cabeçalho (Layout) e na tela de login
+- [x] Redesign visual: fundo de página distinto dos cartões de conteúdo, cores
+  da marca (dourado) substituindo o roxo padrão do template Vite
+- [x] Repositório GitHub conectado e código enviado:
+  github.com/guiguidon-arch/erp-rh-mg (GitHub estava fora do ar em
+  2026-08-06, voltou em 2026-08-07)
+- [x] Deploy em produção na Vercel: **https://erp-rh-mg.vercel.app** — feito
+  para o usuário coletar feedback de um funcionário antes de continuar o
+  roadmap (adianta parte do item 7). Variáveis de ambiente
+  (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) configuradas no painel da
+  Vercel. Todo push para `main` no GitHub deve disparar redeploy automático.
 - [ ] Pendente: usuário vai enviar 4 modelos de documento (ficha de registro,
   contrato de experiência, contrato de prestação de serviços, ficha de EPI)
   para eu recriar como geração automática de PDF (decisão do usuário: PDF
   direto no sistema, não preenchimento de Word — ele quer os documentos já
   prontos para assinatura eletrônica). Isso adianta o item 3 do roadmap.
-- [ ] Pendente: criar repositório no GitHub e conectar (GitHub estava fora do
-  ar em 2026-08-06; usuário decidiu seguir só com Git local por enquanto)
-- [ ] Pendente: usuário vai mandar a logo da empresa para colocar no canto
-  superior esquerdo (`public/logo.png`, já preparado no `Layout.tsx` — some
-  automaticamente se o arquivo não existir)
+- [ ] Sugerido ao usuário: criar um usuário Supabase Auth separado para o
+  funcionário que vai testar (em vez de compartilhar a própria senha)
