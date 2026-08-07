@@ -81,6 +81,17 @@ export default function FuncionarioForm() {
     setForm((atual) => ({ ...atual, [campo]: valor }))
   }
 
+  const jornadaBloqueada = form.tipo_contrato === 'PJ' || form.tipo_contrato === 'Empreita'
+
+  function setTipoContrato(valor: TipoContrato) {
+    const bloqueia = valor === 'PJ' || valor === 'Empreita'
+    setForm((atual) => ({
+      ...atual,
+      tipo_contrato: valor,
+      jornada: bloqueia ? 'Não se aplica' : atual.jornada,
+    }))
+  }
+
   async function registrarHistorico(funcionarioId: string) {
     if (!original) return
 
@@ -217,7 +228,7 @@ export default function FuncionarioForm() {
 
         <div className="form-row">
           <div>
-            <label htmlFor="cargo">Cargo</label>
+            <label htmlFor="cargo">Função</label>
             <input id="cargo" value={form.cargo} onChange={(e) => set('cargo', e.target.value)} />
           </div>
           <div>
@@ -228,14 +239,29 @@ export default function FuncionarioForm() {
 
         <div className="form-row">
           <div>
-            <label htmlFor="salario">Salário (R$)</label>
-            <input
-              id="salario"
-              type="number"
-              step="0.01"
-              value={form.salario}
-              onChange={(e) => set('salario', e.target.value)}
-            />
+            <label htmlFor="salario">Salário</label>
+            <div style={{ position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                  pointerEvents: 'none',
+                }}
+              >
+                R$
+              </span>
+              <input
+                id="salario"
+                type="number"
+                step="0.01"
+                style={{ paddingLeft: 34 }}
+                value={form.salario}
+                onChange={(e) => set('salario', e.target.value)}
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="data_admissao">Data de admissão</label>
@@ -254,23 +280,29 @@ export default function FuncionarioForm() {
             <select
               id="tipo_contrato"
               value={form.tipo_contrato}
-              onChange={(e) => set('tipo_contrato', e.target.value as TipoContrato)}
+              onChange={(e) => setTipoContrato(e.target.value as TipoContrato)}
             >
               <option value="">Selecione...</option>
               <option value="CLT">CLT</option>
               <option value="PJ">PJ</option>
               <option value="Estágio">Estágio</option>
               <option value="Temporário">Temporário</option>
+              <option value="Diarista">Diarista</option>
+              <option value="Empreita">Empreita</option>
             </select>
           </div>
           <div>
             <label htmlFor="jornada">Jornada</label>
-            <input
+            <select
               id="jornada"
-              placeholder="Ex.: 44h semanais"
               value={form.jornada}
+              disabled={jornadaBloqueada}
               onChange={(e) => set('jornada', e.target.value)}
-            />
+            >
+              <option value="">Selecione...</option>
+              <option value="44h semanais">44h semanais</option>
+              <option value="Não se aplica">Não se aplica</option>
+            </select>
           </div>
         </div>
 

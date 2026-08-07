@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -23,7 +23,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         }}
       >
         <nav style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <strong>ERP RH</strong>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }}>
+            <img src="/logo.png" alt="" style={{ height: 28, width: 'auto' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <strong>ERP RH</strong>
+          </Link>
           <NavLink to="/funcionarios" style={linkStyle}>
             Funcionários
           </NavLink>

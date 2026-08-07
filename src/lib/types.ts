@@ -10,7 +10,7 @@ export interface Obra {
 }
 
 export type StatusFuncionario = 'ativo' | 'afastado' | 'ferias' | 'desligado'
-export type TipoContrato = 'CLT' | 'PJ' | 'Estágio' | 'Temporário'
+export type TipoContrato = 'CLT' | 'PJ' | 'Estágio' | 'Temporário' | 'Diarista' | 'Empreita'
 
 export interface Funcionario {
   id: string
@@ -43,6 +43,30 @@ export interface Dependente {
   nome: string
   data_nascimento: string | null
   parentesco: string | null
+  created_at: string
+}
+
+export type CategoriaDocumento =
+  | 'contrato'
+  | 'rg_cpf'
+  | 'atestado'
+  | 'comprovante'
+  | 'aso'
+  | 'cnh'
+  | 'ficha_registro'
+  | 'contrato_experiencia'
+  | 'contrato_prestacao_servicos'
+  | 'ficha_epi'
+  | 'outro'
+
+export interface DocumentoFuncionario {
+  id: string
+  funcionario_id: string
+  categoria: CategoriaDocumento
+  nome_arquivo: string
+  storage_path: string
+  data_vencimento: string | null
+  enviado_por: string | null
   created_at: string
 }
 

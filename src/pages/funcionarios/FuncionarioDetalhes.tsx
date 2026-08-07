@@ -1,8 +1,16 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatarCpf } from '../../lib/cpf'
-import type { Dependente, FuncionarioComObra, HistoricoFuncionario, StatusFuncionario } from '../../lib/types'
+import { categoriaLabel, statusVencimento } from '../../lib/documentos'
+import type {
+  CategoriaDocumento,
+  Dependente,
+  DocumentoFuncionario,
+  FuncionarioComObra,
+  HistoricoFuncionario,
+  StatusFuncionario,
+} from '../../lib/types'
 
 const statusLabel: Record<StatusFuncionario, string> = {
   ativo: 'Ativo',
@@ -12,7 +20,7 @@ const statusLabel: Record<StatusFuncionario, string> = {
 }
 
 const tipoHistoricoLabel: Record<HistoricoFuncionario['tipo'], string> = {
-  promocao: 'Mudança de cargo',
+  promocao: 'Mudança de função',
   reajuste_salarial: 'Reajuste salarial',
   mudanca_obra: 'Mudança de obra',
   mudanca_status: 'Mudança de status',
@@ -25,6 +33,7 @@ export default function FuncionarioDetalhes() {
 
   const [funcionario, setFuncionario] = useState<FuncionarioComObra | null>(null)
   const [dependentes, setDependentes] = useState<Dependente[]>([])
+  const [documentos, setDocumentos] = useState<DocumentoFuncionario[]>([])
   const [historico, setHistorico] = useState<HistoricoFuncionario[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +41,11 @@ export default function FuncionarioDetalhes() {
   const [novoDependenteNome, setNovoDependenteNome] = useState('')
   const [novoDependenteParentesco, setNovoDependenteParentesco] = useState('')
   const [novoDependenteNascimento, setNovoDependenteNascimento] = useState('')
+
+  const [categoriaUpload, setCategoriaUpload] = useState<CategoriaDocumento | ''>('')
+  const [vencimentoUpload, setVencimentoUpload] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const arquivoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     carregar()
@@ -41,9 +55,10 @@ export default function FuncionarioDetalhes() {
     setLoading(true)
     setError(null)
 
-    const [{ data: func, error: erroFunc }, { data: deps }, { data: hist }] = await Promise.all([
+    const [{ data: func, error: erroFunc }, { data: deps }, { data: docs }, { data: hist }] = await Promise.all([
       supabase.from('funcionarios').select('*, obra:obras(id, nome)').eq('id', id).single(),
       supabase.from('dependentes').select('*').eq('funcionario_id', id).order('nome'),
+      supabase.from('documentos_funcionario').select('*').eq('funcionario_id', id).order('created_at', { ascending: false }),
       supabase.from('historico_funcionario').select('*').eq('funcionario_id', id).order('data', { ascending: false }),
     ])
 
@@ -52,9 +67,68 @@ export default function FuncionarioDetalhes() {
     } else {
       setFuncionario(func as unknown as FuncionarioComObra)
       setDependentes(deps ?? [])
+      setDocumentos(docs ?? [])
       setHistorico(hist ?? [])
     }
     setLoading(false)
+  }
+
+  async function enviarDocumento(event: FormEvent) {
+    event.preventDefault()
+    const arquivo = arquivoInputRef.current?.files?.[0]
+    if (!arquivo || !categoriaUpload) return
+
+    setEnviando(true)
+    setError(null)
+
+    const caminho = `${id}/${Date.now()}-${arquivo.name}`
+
+    const { error: erroUpload } = await supabase.storage.from('documentos-funcionarios').upload(caminho, arquivo)
+
+    if (erroUpload) {
+      setEnviando(false)
+      setError(erroUpload.message)
+      return
+    }
+
+    const { error: erroInsert } = await supabase.from('documentos_funcionario').insert({
+      funcionario_id: id,
+      categoria: categoriaUpload,
+      nome_arquivo: arquivo.name,
+      storage_path: caminho,
+      data_vencimento: vencimentoUpload || null,
+    })
+
+    setEnviando(false)
+
+    if (erroInsert) {
+      setError(erroInsert.message)
+      return
+    }
+
+    setCategoriaUpload('')
+    setVencimentoUpload('')
+    if (arquivoInputRef.current) arquivoInputRef.current.value = ''
+    carregar()
+  }
+
+  async function baixarDocumento(doc: DocumentoFuncionario) {
+    const { data, error } = await supabase.storage
+      .from('documentos-funcionarios')
+      .createSignedUrl(doc.storage_path, 60)
+
+    if (error || !data) {
+      setError(error?.message ?? 'Não foi possível gerar o link de download.')
+      return
+    }
+
+    window.open(data.signedUrl, '_blank')
+  }
+
+  async function removerDocumento(doc: DocumentoFuncionario) {
+    await supabase.storage.from('documentos-funcionarios').remove([doc.storage_path])
+    await supabase.from('documentos_funcionario').delete().eq('id', doc.id)
+    carregar()
   }
 
   async function adicionarDependente(event: FormEvent) {
@@ -125,7 +199,7 @@ export default function FuncionarioDetalhes() {
       <section style={{ marginTop: 24 }}>
         <h2>Dados contratuais</h2>
         <dl style={{ display: 'grid', gridTemplateColumns: '160px 1fr', rowGap: 8 }}>
-          <dt style={{ color: 'var(--text-muted)' }}>Cargo</dt>
+          <dt style={{ color: 'var(--text-muted)' }}>Função</dt>
           <dd style={{ margin: 0 }}>{funcionario.cargo ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Departamento</dt>
           <dd style={{ margin: 0 }}>{funcionario.departamento ?? '—'}</dd>
@@ -179,12 +253,21 @@ export default function FuncionarioDetalhes() {
           </div>
           <div>
             <label htmlFor="dep-parentesco">Parentesco</label>
-            <input
+            <select
               id="dep-parentesco"
-              placeholder="Ex.: Filho(a), cônjuge"
               value={novoDependenteParentesco}
               onChange={(e) => setNovoDependenteParentesco(e.target.value)}
-            />
+            >
+              <option value="">Selecione...</option>
+              <option value="Cônjuge">Cônjuge</option>
+              <option value="Companheiro(a)">Companheiro(a)</option>
+              <option value="Filho(a)">Filho(a)</option>
+              <option value="Enteado(a)">Enteado(a)</option>
+              <option value="Pai">Pai</option>
+              <option value="Mãe">Mãe</option>
+              <option value="Irmão(a)">Irmão(a)</option>
+              <option value="Outro">Outro</option>
+            </select>
           </div>
           <div>
             <label htmlFor="dep-nascimento">Nascimento</label>
@@ -196,6 +279,86 @@ export default function FuncionarioDetalhes() {
             />
           </div>
           <button type="submit">Adicionar</button>
+        </form>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Documentos</h2>
+        {documentos.length === 0 && <p>Nenhum documento anexado ainda.</p>}
+        {documentos.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Arquivo</th>
+                <th>Vencimento</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {documentos.map((doc) => {
+                const vencimento = statusVencimento(doc.data_vencimento)
+                return (
+                  <tr key={doc.id}>
+                    <td>{categoriaLabel[doc.categoria]}</td>
+                    <td>{doc.nome_arquivo}</td>
+                    <td>
+                      {doc.data_vencimento ?? '—'}{' '}
+                      {vencimento === 'vencido' && (
+                        <span className="badge" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+                          Vencido
+                        </span>
+                      )}
+                      {vencimento === 'vencendo' && <span className="badge">Vence em breve</span>}
+                    </td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" onClick={() => baixarDocumento(doc)}>
+                        Baixar
+                      </button>
+                      <button type="button" className="danger" onClick={() => removerDocumento(doc)}>
+                        Remover
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+
+        <form onSubmit={enviarDocumento} className="form-row" style={{ marginTop: 12, alignItems: 'flex-end' }}>
+          <div>
+            <label htmlFor="doc-arquivo">Arquivo</label>
+            <input id="doc-arquivo" type="file" ref={arquivoInputRef} required />
+          </div>
+          <div>
+            <label htmlFor="doc-categoria">Categoria</label>
+            <select
+              id="doc-categoria"
+              value={categoriaUpload}
+              onChange={(e) => setCategoriaUpload(e.target.value as CategoriaDocumento)}
+              required
+            >
+              <option value="">Selecione...</option>
+              {Object.entries(categoriaLabel).map(([valor, label]) => (
+                <option key={valor} value={valor}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="doc-vencimento">Vencimento (opcional)</label>
+            <input
+              id="doc-vencimento"
+              type="date"
+              value={vencimentoUpload}
+              onChange={(e) => setVencimentoUpload(e.target.value)}
+            />
+          </div>
+          <button type="submit" disabled={enviando}>
+            {enviando ? 'Enviando...' : 'Anexar'}
+          </button>
         </form>
       </section>
 

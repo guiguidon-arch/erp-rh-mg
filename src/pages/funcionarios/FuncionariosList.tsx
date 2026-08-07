@@ -102,7 +102,7 @@ export default function FuncionariosList() {
           <thead>
             <tr>
               <th>Nome</th>
-              <th>Cargo</th>
+              <th>Função</th>
               <th>Obra</th>
               <th>Status</th>
               <th></th>
