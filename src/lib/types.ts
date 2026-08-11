@@ -11,6 +11,10 @@ export interface Obra {
 
 export type StatusFuncionario = 'ativo' | 'afastado' | 'ferias' | 'desligado'
 export type TipoContrato = 'CLT' | 'PJ' | 'Estágio' | 'Temporário' | 'Diarista' | 'Empreita'
+export type TipoConta = 'corrente' | 'poupanca' | 'salario'
+export type RacaCor = 'Branca' | 'Preta' | 'Parda' | 'Amarela' | 'Indígena' | 'Não informado'
+export type EstadoCivil = 'Solteiro(a)' | 'Casado(a)' | 'Divorciado(a)' | 'Viúvo(a)' | 'União Estável'
+export type Sexo = 'Masculino' | 'Feminino'
 
 export interface Funcionario {
   id: string
@@ -29,6 +33,39 @@ export interface Funcionario {
   jornada: string | null
   obra_id: string | null
   status: StatusFuncionario
+
+  ctps_numero: string | null
+  ctps_serie: string | null
+  ctps_uf: string | null
+  pis: string | null
+  titulo_eleitor: string | null
+  cnh_numero: string | null
+  cnh_categoria: string | null
+  cnh_orgao_emissor: string | null
+  cnh_uf: string | null
+  cnh_data_expedicao: string | null
+  cnh_data_vencimento: string | null
+
+  banco: string | null
+  agencia: string | null
+  conta: string | null
+  tipo_conta: TipoConta | null
+  vale_transporte: boolean | null
+  tipo_transporte: string | null
+
+  escolaridade: string | null
+  local_nascimento: string | null
+  raca_cor: RacaCor | null
+  estado_civil: EstadoCivil | null
+  sexo: Sexo | null
+  nome_mae: string | null
+  nome_pai: string | null
+
+  conjuge_cpf: string | null
+  conjuge_data_nascimento: string | null
+  conjuge_trabalha: boolean | null
+  conjuge_dependente_ir: boolean | null
+
   created_at: string
   updated_at: string
 }
@@ -43,6 +80,8 @@ export interface Dependente {
   nome: string
   data_nascimento: string | null
   parentesco: string | null
+  cpf: string | null
+  dependente_ir: boolean | null
   created_at: string
 }
 

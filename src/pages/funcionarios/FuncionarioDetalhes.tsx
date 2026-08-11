@@ -43,6 +43,8 @@ export default function FuncionarioDetalhes() {
   const [novoDependenteNome, setNovoDependenteNome] = useState('')
   const [novoDependenteParentesco, setNovoDependenteParentesco] = useState('')
   const [novoDependenteNascimento, setNovoDependenteNascimento] = useState('')
+  const [novoDependenteCpf, setNovoDependenteCpf] = useState('')
+  const [novoDependenteIr, setNovoDependenteIr] = useState<'' | 'sim' | 'nao'>('')
 
   const [categoriaUpload, setCategoriaUpload] = useState<CategoriaDocumento | ''>('')
   const [vencimentoUpload, setVencimentoUpload] = useState('')
@@ -142,6 +144,8 @@ export default function FuncionarioDetalhes() {
       nome: novoDependenteNome,
       parentesco: novoDependenteParentesco || null,
       data_nascimento: novoDependenteNascimento || null,
+      cpf: novoDependenteCpf.replace(/\D/g, '') || null,
+      dependente_ir: novoDependenteIr === '' ? null : novoDependenteIr === 'sim',
     })
 
     if (error) {
@@ -152,6 +156,8 @@ export default function FuncionarioDetalhes() {
     setNovoDependenteNome('')
     setNovoDependenteParentesco('')
     setNovoDependenteNascimento('')
+    setNovoDependenteCpf('')
+    setNovoDependenteIr('')
     carregar()
   }
 
@@ -189,12 +195,89 @@ export default function FuncionarioDetalhes() {
           <dd style={{ margin: 0 }}>{funcionario.rg ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Nascimento</dt>
           <dd style={{ margin: 0 }}>{formatarData(funcionario.data_nascimento)}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Local de nascimento</dt>
+          <dd style={{ margin: 0 }}>{funcionario.local_nascimento ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Telefone</dt>
           <dd style={{ margin: 0 }}>{funcionario.telefone ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>E-mail</dt>
           <dd style={{ margin: 0 }}>{funcionario.email ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Endereço</dt>
           <dd style={{ margin: 0 }}>{funcionario.endereco ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Estado civil</dt>
+          <dd style={{ margin: 0 }}>{funcionario.estado_civil ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Sexo</dt>
+          <dd style={{ margin: 0 }}>{funcionario.sexo ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Raça/Cor</dt>
+          <dd style={{ margin: 0 }}>{funcionario.raca_cor ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Escolaridade</dt>
+          <dd style={{ margin: 0 }}>{funcionario.escolaridade ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Nome da mãe</dt>
+          <dd style={{ margin: 0 }}>{funcionario.nome_mae ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Nome do pai</dt>
+          <dd style={{ margin: 0 }}>{funcionario.nome_pai ?? '—'}</dd>
+        </dl>
+      </section>
+
+      {(funcionario.estado_civil === 'Casado(a)' || funcionario.estado_civil === 'União Estável') && (
+        <section style={{ marginTop: 24 }}>
+          <h2>Cônjuge</h2>
+          <dl style={{ display: 'grid', gridTemplateColumns: '160px 1fr', rowGap: 8 }}>
+            <dt style={{ color: 'var(--text-muted)' }}>CPF</dt>
+            <dd style={{ margin: 0 }}>{funcionario.conjuge_cpf ? formatarCpf(funcionario.conjuge_cpf) : '—'}</dd>
+            <dt style={{ color: 'var(--text-muted)' }}>Nascimento</dt>
+            <dd style={{ margin: 0 }}>{formatarData(funcionario.conjuge_data_nascimento)}</dd>
+            <dt style={{ color: 'var(--text-muted)' }}>Trabalha?</dt>
+            <dd style={{ margin: 0 }}>{funcionario.conjuge_trabalha == null ? '—' : funcionario.conjuge_trabalha ? 'Sim' : 'Não'}</dd>
+            <dt style={{ color: 'var(--text-muted)' }}>Dependente de IR?</dt>
+            <dd style={{ margin: 0 }}>
+              {funcionario.conjuge_dependente_ir == null ? '—' : funcionario.conjuge_dependente_ir ? 'Sim' : 'Não'}
+            </dd>
+          </dl>
+        </section>
+      )}
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Documentos e informações</h2>
+        <dl style={{ display: 'grid', gridTemplateColumns: '160px 1fr', rowGap: 8 }}>
+          <dt style={{ color: 'var(--text-muted)' }}>CTPS</dt>
+          <dd style={{ margin: 0 }}>
+            {funcionario.ctps_numero
+              ? `${funcionario.ctps_numero}${funcionario.ctps_serie ? ' série ' + funcionario.ctps_serie : ''}${funcionario.ctps_uf ? '/' + funcionario.ctps_uf : ''}`
+              : '—'}
+          </dd>
+          <dt style={{ color: 'var(--text-muted)' }}>PIS/PASEP</dt>
+          <dd style={{ margin: 0 }}>{funcionario.pis ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Título de eleitor</dt>
+          <dd style={{ margin: 0 }}>{funcionario.titulo_eleitor ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>CNH</dt>
+          <dd style={{ margin: 0 }}>
+            {funcionario.cnh_numero
+              ? `${funcionario.cnh_numero}${funcionario.cnh_categoria ? ' cat. ' + funcionario.cnh_categoria : ''} — validade ${formatarData(funcionario.cnh_data_vencimento)}`
+              : '—'}
+          </dd>
+        </dl>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Dados bancários e benefícios</h2>
+        <dl style={{ display: 'grid', gridTemplateColumns: '160px 1fr', rowGap: 8 }}>
+          <dt style={{ color: 'var(--text-muted)' }}>Banco</dt>
+          <dd style={{ margin: 0 }}>{funcionario.banco ?? '—'}</dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Agência / Conta</dt>
+          <dd style={{ margin: 0 }}>
+            {funcionario.agencia || funcionario.conta ? `${funcionario.agencia ?? '—'} / ${funcionario.conta ?? '—'}` : '—'}
+          </dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Tipo de conta</dt>
+          <dd style={{ margin: 0 }}>
+            {funcionario.tipo_conta === 'corrente' && 'Conta corrente'}
+            {funcionario.tipo_conta === 'poupanca' && 'Conta poupança'}
+            {funcionario.tipo_conta === 'salario' && 'Conta salário'}
+            {!funcionario.tipo_conta && '—'}
+          </dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Vale-transporte</dt>
+          <dd style={{ margin: 0 }}>
+            {funcionario.vale_transporte == null ? '—' : funcionario.vale_transporte ? `Sim (${funcionario.tipo_transporte ?? 'tipo não informado'})` : 'Não'}
+          </dd>
         </dl>
       </section>
 
@@ -227,7 +310,9 @@ export default function FuncionarioDetalhes() {
               <tr>
                 <th>Nome</th>
                 <th>Parentesco</th>
+                <th>CPF</th>
                 <th>Nascimento</th>
+                <th>Dep. IR</th>
                 <th></th>
               </tr>
             </thead>
@@ -236,7 +321,9 @@ export default function FuncionarioDetalhes() {
                 <tr key={dep.id}>
                   <td>{dep.nome}</td>
                   <td>{dep.parentesco ?? '—'}</td>
+                  <td>{dep.cpf ? formatarCpf(dep.cpf) : '—'}</td>
                   <td>{formatarData(dep.data_nascimento)}</td>
+                  <td>{dep.dependente_ir == null ? '—' : dep.dependente_ir ? 'Sim' : 'Não'}</td>
                   <td>
                     <button type="button" className="danger" onClick={() => removerDependente(dep.id)}>
                       Remover
@@ -272,6 +359,10 @@ export default function FuncionarioDetalhes() {
             </select>
           </div>
           <div>
+            <label htmlFor="dep-cpf">CPF</label>
+            <input id="dep-cpf" value={novoDependenteCpf} onChange={(e) => setNovoDependenteCpf(e.target.value)} />
+          </div>
+          <div>
             <label htmlFor="dep-nascimento">Nascimento</label>
             <input
               id="dep-nascimento"
@@ -279,6 +370,14 @@ export default function FuncionarioDetalhes() {
               value={novoDependenteNascimento}
               onChange={(e) => setNovoDependenteNascimento(e.target.value)}
             />
+          </div>
+          <div>
+            <label htmlFor="dep-ir">Dependente de IR?</label>
+            <select id="dep-ir" value={novoDependenteIr} onChange={(e) => setNovoDependenteIr(e.target.value as '' | 'sim' | 'nao')}>
+              <option value="">Selecione...</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
           </div>
           <button type="submit">Adicionar</button>
         </form>
