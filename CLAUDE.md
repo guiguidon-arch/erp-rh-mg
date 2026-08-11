@@ -97,6 +97,13 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   roadmap (adianta parte do item 7). Variáveis de ambiente
   (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) configuradas no painel da
   Vercel. Todo push para `main` no GitHub deve disparar redeploy automático.
+- [x] Bug de login em produção resolvido (2026-08-11): o valor de
+  `VITE_SUPABASE_ANON_KEY` salvo na Vercel estava corrompido — os primeiros 8
+  caracteres corretos seguidos de sinais de "•" mascarados, provavelmente por
+  copiar a chave de um texto que exibia o valor mascarado em vez do valor
+  real. Corrigido copiando a chave direto do Supabase (Project Settings → API
+  → botão de copiar), não do chat nem do painel da Vercel. Login testado e
+  funcionando em produção.
 - [ ] Pendente: usuário vai enviar 4 modelos de documento (ficha de registro,
   contrato de experiência, contrato de prestação de serviços, ficha de EPI)
   para eu recriar como geração automática de PDF (decisão do usuário: PDF
