@@ -4,10 +4,15 @@ import { supabase } from '../../lib/supabase'
 import { formatarCpf } from '../../lib/cpf'
 import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
+import { gerarEAbrirPdf } from '../../lib/gerarPdf'
+import { FichaRegistro } from '../../pdf/FichaRegistro'
+import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
+import { FichaEpi } from '../../pdf/FichaEpi'
 import type {
   CategoriaDocumento,
   Dependente,
   DocumentoFuncionario,
+  EpiFuncionario,
   FuncionarioComObra,
   HistoricoFuncionario,
   StatusFuncionario,
@@ -36,9 +41,17 @@ export default function FuncionarioDetalhes() {
   const [funcionario, setFuncionario] = useState<FuncionarioComObra | null>(null)
   const [dependentes, setDependentes] = useState<Dependente[]>([])
   const [documentos, setDocumentos] = useState<DocumentoFuncionario[]>([])
+  const [epis, setEpis] = useState<EpiFuncionario[]>([])
   const [historico, setHistorico] = useState<HistoricoFuncionario[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [gerandoPdf, setGerandoPdf] = useState<string | null>(null)
+
+  const [novoEpiTipo, setNovoEpiTipo] = useState('')
+  const [novoEpiQuantidade, setNovoEpiQuantidade] = useState('1')
+  const [novoEpiCa, setNovoEpiCa] = useState('')
+  const [novoEpiFabricante, setNovoEpiFabricante] = useState('')
+  const [novoEpiEntrega, setNovoEpiEntrega] = useState(() => new Date().toISOString().slice(0, 10))
 
   const [novoDependenteNome, setNovoDependenteNome] = useState('')
   const [novoDependenteParentesco, setNovoDependenteParentesco] = useState('')
@@ -59,10 +72,11 @@ export default function FuncionarioDetalhes() {
     setLoading(true)
     setError(null)
 
-    const [{ data: func, error: erroFunc }, { data: deps }, { data: docs }, { data: hist }] = await Promise.all([
+    const [{ data: func, error: erroFunc }, { data: deps }, { data: docs }, { data: episData }, { data: hist }] = await Promise.all([
       supabase.from('funcionarios').select('*, obra:obras(id, nome)').eq('id', id).single(),
       supabase.from('dependentes').select('*').eq('funcionario_id', id).order('nome'),
       supabase.from('documentos_funcionario').select('*').eq('funcionario_id', id).order('created_at', { ascending: false }),
+      supabase.from('epis_funcionario').select('*').eq('funcionario_id', id).order('data_entrega', { ascending: false }),
       supabase.from('historico_funcionario').select('*').eq('funcionario_id', id).order('data', { ascending: false }),
     ])
 
@@ -72,9 +86,59 @@ export default function FuncionarioDetalhes() {
       setFuncionario(func as unknown as FuncionarioComObra)
       setDependentes(deps ?? [])
       setDocumentos(docs ?? [])
+      setEpis(episData ?? [])
       setHistorico(hist ?? [])
     }
     setLoading(false)
+  }
+
+  async function adicionarEpi(event: FormEvent) {
+    event.preventDefault()
+    if (!novoEpiTipo.trim()) return
+
+    const { error } = await supabase.from('epis_funcionario').insert({
+      funcionario_id: id,
+      tipo_epi: novoEpiTipo,
+      quantidade: Number(novoEpiQuantidade) || 1,
+      numero_ca: novoEpiCa || null,
+      fabricante: novoEpiFabricante || null,
+      data_entrega: novoEpiEntrega,
+    })
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    setNovoEpiTipo('')
+    setNovoEpiQuantidade('1')
+    setNovoEpiCa('')
+    setNovoEpiFabricante('')
+    setNovoEpiEntrega(new Date().toISOString().slice(0, 10))
+    carregar()
+  }
+
+  async function removerEpi(epiId: string) {
+    await supabase.from('epis_funcionario').delete().eq('id', epiId)
+    carregar()
+  }
+
+  async function gerarPdf(tipo: 'ficha_registro' | 'contrato_experiencia' | 'ficha_epi') {
+    if (!funcionario) return
+    setGerandoPdf(tipo)
+    try {
+      if (tipo === 'ficha_registro') {
+        await gerarEAbrirPdf(<FichaRegistro funcionario={funcionario} dependentes={dependentes} />, `ficha-registro-${funcionario.nome}.pdf`)
+      } else if (tipo === 'contrato_experiencia') {
+        await gerarEAbrirPdf(<ContratoExperiencia funcionario={funcionario} />, `contrato-experiencia-${funcionario.nome}.pdf`)
+      } else {
+        await gerarEAbrirPdf(<FichaEpi funcionario={funcionario} epis={epis} />, `ficha-epi-${funcionario.nome}.pdf`)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao gerar PDF.')
+    } finally {
+      setGerandoPdf(null)
+    }
   }
 
   async function enviarDocumento(event: FormEvent) {
@@ -185,6 +249,23 @@ export default function FuncionarioDetalhes() {
       </div>
 
       <span className="badge">{statusLabel[funcionario.status]}</span>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Documentos para assinatura</h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('ficha_registro')}>
+            {gerandoPdf === 'ficha_registro' ? 'Gerando...' : 'Gerar Ficha de Registro (PDF)'}
+          </button>
+          {funcionario.tipo_contrato !== 'PJ' && funcionario.tipo_contrato !== 'Empreita' && (
+            <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('contrato_experiencia')}>
+              {gerandoPdf === 'contrato_experiencia' ? 'Gerando...' : 'Gerar Contrato de Experiência (PDF)'}
+            </button>
+          )}
+          <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('ficha_epi')}>
+            {gerandoPdf === 'ficha_epi' ? 'Gerando...' : 'Gerar Ficha de EPI (PDF)'}
+          </button>
+        </div>
+      </section>
 
       <section style={{ marginTop: 24 }}>
         <h2>Dados pessoais</h2>
@@ -460,6 +541,78 @@ export default function FuncionarioDetalhes() {
           <button type="submit" disabled={enviando}>
             {enviando ? 'Enviando...' : 'Anexar'}
           </button>
+        </form>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>EPIs entregues</h2>
+        {epis.length === 0 && <p>Nenhum EPI cadastrado ainda.</p>}
+        {epis.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>Qtd.</th>
+                <th>Tipo</th>
+                <th>Nº CA</th>
+                <th>Entrega</th>
+                <th>Devolução</th>
+                <th>Fabricante</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {epis.map((epi) => (
+                <tr key={epi.id}>
+                  <td>{epi.quantidade}</td>
+                  <td>{epi.tipo_epi}</td>
+                  <td>{epi.numero_ca ?? '—'}</td>
+                  <td>{formatarData(epi.data_entrega)}</td>
+                  <td>{formatarData(epi.data_devolucao)}</td>
+                  <td>{epi.fabricante ?? '—'}</td>
+                  <td>
+                    <button type="button" className="danger" onClick={() => removerEpi(epi.id)}>
+                      Remover
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <form onSubmit={adicionarEpi} className="form-row" style={{ marginTop: 12, alignItems: 'flex-end' }}>
+          <div style={{ maxWidth: 70 }}>
+            <label htmlFor="epi-qtd">Qtd.</label>
+            <input
+              id="epi-qtd"
+              type="number"
+              min="1"
+              value={novoEpiQuantidade}
+              onChange={(e) => setNovoEpiQuantidade(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="epi-tipo">Tipo de EPI</label>
+            <input
+              id="epi-tipo"
+              placeholder="Ex.: Capacete, luvas..."
+              value={novoEpiTipo}
+              onChange={(e) => setNovoEpiTipo(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="epi-ca">Nº CA</label>
+            <input id="epi-ca" value={novoEpiCa} onChange={(e) => setNovoEpiCa(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="epi-fabricante">Fabricante</label>
+            <input id="epi-fabricante" value={novoEpiFabricante} onChange={(e) => setNovoEpiFabricante(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="epi-entrega">Data de entrega</label>
+            <input id="epi-entrega" type="date" value={novoEpiEntrega} onChange={(e) => setNovoEpiEntrega(e.target.value)} />
+          </div>
+          <button type="submit">Adicionar</button>
         </form>
       </section>
 

@@ -46,6 +46,9 @@ export default function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/obras" style={linkStyle}>
               Obras
             </NavLink>
+            <NavLink to="/prestadores" style={linkStyle}>
+              Prestadores
+            </NavLink>
           </div>
         </nav>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>

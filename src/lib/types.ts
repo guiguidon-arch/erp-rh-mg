@@ -85,6 +85,53 @@ export interface Dependente {
   created_at: string
 }
 
+export interface EpiFuncionario {
+  id: string
+  funcionario_id: string
+  tipo_epi: string
+  quantidade: number
+  numero_ca: string | null
+  fabricante: string | null
+  data_entrega: string
+  data_devolucao: string | null
+  created_at: string
+}
+
+export type StatusPrestador = 'ativo' | 'inativo'
+
+export interface Prestador {
+  id: string
+  razao_social: string
+  cnpj: string
+  responsavel_nome: string | null
+  endereco: string | null
+  telefone: string | null
+  email: string | null
+  status: StatusPrestador
+  created_at: string
+  updated_at: string
+}
+
+export interface ContratoPrestador {
+  id: string
+  prestador_id: string
+  obra_id: string | null
+  escopo_servico: string
+  valor_total: number | null
+  forma_pagamento: string | null
+  prazo_dias: number | null
+  data_inicio: string | null
+  local_assinatura: string | null
+  data_assinatura: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ContratoPrestadorComRelacoes extends ContratoPrestador {
+  prestador: Pick<Prestador, 'id' | 'razao_social' | 'cnpj'>
+  obra: Pick<Obra, 'id' | 'nome'> | null
+}
+
 export type CategoriaDocumento =
   | 'contrato'
   | 'rg_cpf'
