@@ -104,10 +104,30 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   real. Corrigido copiando a chave direto do Supabase (Project Settings → API
   → botão de copiar), não do chat nem do painel da Vercel. Login testado e
   funcionando em produção.
-- [ ] Pendente: usuário vai enviar 4 modelos de documento (ficha de registro,
-  contrato de experiência, contrato de prestação de serviços, ficha de EPI)
-  para eu recriar como geração automática de PDF (decisão do usuário: PDF
-  direto no sistema, não preenchimento de Word — ele quer os documentos já
-  prontos para assinatura eletrônica). Isso adianta o item 3 do roadmap.
+- [x] Datas exibidas no formato dd/mm/aaaa em toda a tela de detalhes do
+  funcionário (`src/lib/formatters.ts`)
+- [x] Usuário enviou os 4 modelos de documento + uma ficha de registro
+  admissional real preenchida (formato .xlsx, usada por 7 funcionários
+  diferentes na mesma planilha — cada aba é um funcionário). Comparei os
+  campos da ficha com o cadastro do ERP e faltavam vários: CTPS, PIS/PASEP,
+  título de eleitor, CNH (número/categoria/órgão/UF/datas), dados bancários
+  (banco/agência/conta/tipo), vale-transporte, escolaridade, local de
+  nascimento, raça/cor, estado civil, sexo, nome da mãe/pai, dados do cônjuge
+  (CPF/nascimento/trabalha/dependente IR), e nos dependentes: CPF e
+  "dependente de IR". Todos adicionados ao cadastro (migration
+  `0005_dados_admissionais.sql`). Ficou de fora, por decisão do usuário:
+  horário de trabalho detalhado por dia da semana (mantido o campo simples
+  "Jornada") e os campos de aposentadoria/imóvel-FGTS da ficha (raramente
+  usados, específicos da Caixa Econômica).
+- [ ] Pendente: com os campos do cadastro agora completos, o próximo passo é
+  recriar os 4 documentos (ficha de registro, contrato de experiência,
+  contrato de prestação de serviços, ficha de EPI) como geração automática de
+  PDF preenchido com os dados do funcionário (decisão do usuário: PDF direto
+  no sistema, não preenchimento de Word — quer os documentos prontos para
+  assinatura eletrônica). Isso é o item 3 do roadmap. Os arquivos-modelo estão
+  em `C:\Users\guilh\Downloads\` (contratos em .docx, ficha de EPI em .xlsx) —
+  ainda não analisados a fundo, só a ficha de registro foi mapeada campo a
+  campo até agora. O usuário também mandou uma folha de ponto (.xlsx) — isso é
+  para o item 4 do roadmap (importação de ponto), não usar agora.
 - [ ] Sugerido ao usuário: criar um usuário Supabase Auth separado para o
   funcionário que vai testar (em vez de compartilhar a própria senha)
