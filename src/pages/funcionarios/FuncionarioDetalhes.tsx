@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatarCpf } from '../../lib/cpf'
+import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
 import type {
   CategoriaDocumento,
@@ -187,7 +188,7 @@ export default function FuncionarioDetalhes() {
           <dt style={{ color: 'var(--text-muted)' }}>RG</dt>
           <dd style={{ margin: 0 }}>{funcionario.rg ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Nascimento</dt>
-          <dd style={{ margin: 0 }}>{funcionario.data_nascimento ?? '—'}</dd>
+          <dd style={{ margin: 0 }}>{formatarData(funcionario.data_nascimento)}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Telefone</dt>
           <dd style={{ margin: 0 }}>{funcionario.telefone ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>E-mail</dt>
@@ -207,7 +208,7 @@ export default function FuncionarioDetalhes() {
           <dt style={{ color: 'var(--text-muted)' }}>Salário</dt>
           <dd style={{ margin: 0 }}>{funcionario.salario != null ? `R$ ${funcionario.salario.toFixed(2)}` : '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Admissão</dt>
-          <dd style={{ margin: 0 }}>{funcionario.data_admissao ?? '—'}</dd>
+          <dd style={{ margin: 0 }}>{formatarData(funcionario.data_admissao)}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Tipo de contrato</dt>
           <dd style={{ margin: 0 }}>{funcionario.tipo_contrato ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Jornada</dt>
@@ -235,7 +236,7 @@ export default function FuncionarioDetalhes() {
                 <tr key={dep.id}>
                   <td>{dep.nome}</td>
                   <td>{dep.parentesco ?? '—'}</td>
-                  <td>{dep.data_nascimento ?? '—'}</td>
+                  <td>{formatarData(dep.data_nascimento)}</td>
                   <td>
                     <button type="button" className="danger" onClick={() => removerDependente(dep.id)}>
                       Remover
@@ -304,7 +305,7 @@ export default function FuncionarioDetalhes() {
                     <td>{categoriaLabel[doc.categoria]}</td>
                     <td>{doc.nome_arquivo}</td>
                     <td>
-                      {doc.data_vencimento ?? '—'}{' '}
+                      {formatarData(doc.data_vencimento)}{' '}
                       {vencimento === 'vencido' && (
                         <span className="badge" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                           Vencido
@@ -379,7 +380,7 @@ export default function FuncionarioDetalhes() {
             <tbody>
               {historico.map((h) => (
                 <tr key={h.id}>
-                  <td>{h.data}</td>
+                  <td>{formatarData(h.data)}</td>
                   <td>{tipoHistoricoLabel[h.tipo]}</td>
                   <td>{h.valor_anterior ?? '—'}</td>
                   <td>{h.valor_novo ?? '—'}</td>

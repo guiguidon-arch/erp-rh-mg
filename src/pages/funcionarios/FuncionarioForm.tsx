@@ -92,8 +92,8 @@ export default function FuncionarioForm() {
     }))
   }
 
-  async function registrarHistorico(funcionarioId: string) {
-    if (!original) return
+  async function registrarHistorico(funcionarioId: string): Promise<string | null> {
+    if (!original) return null
 
     const entradas: Array<{ tipo: string; campo: string; valor_anterior: string; valor_novo: string }> = []
 
@@ -127,10 +127,13 @@ export default function FuncionarioForm() {
     }
 
     if (entradas.length > 0) {
-      await supabase.from('historico_funcionario').insert(
+      const { error } = await supabase.from('historico_funcionario').insert(
         entradas.map((e) => ({ ...e, funcionario_id: funcionarioId }))
       )
+      if (error) return error.message
     }
+
+    return null
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -169,7 +172,12 @@ export default function FuncionarioForm() {
         setError(error.message)
         return
       }
-      await registrarHistorico(id!)
+      const erroHistorico = await registrarHistorico(id!)
+      setSalvando(false)
+      if (erroHistorico) {
+        setError(`Dados salvos, mas houve um erro ao registrar o histórico: ${erroHistorico}`)
+        return
+      }
       navigate(`/funcionarios/${id}`)
     } else {
       const { data, error } = await supabase.from('funcionarios').insert(payload).select('id').single()
