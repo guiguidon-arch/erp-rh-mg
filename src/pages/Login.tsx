@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { SESSAO_EXPIRADA_KEY } from '../lib/supabase'
 
 function traduzirErro(mensagem: string): string {
   if (mensagem.includes('Invalid login credentials')) return 'E-mail ou senha inválidos.'
@@ -16,6 +17,12 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
+
+  const [sessaoExpirada] = useState(() => {
+    const expirou = sessionStorage.getItem(SESSAO_EXPIRADA_KEY) === '1'
+    if (expirou) sessionStorage.removeItem(SESSAO_EXPIRADA_KEY)
+    return expirou
+  })
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -48,6 +55,12 @@ export default function Login() {
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />
         <h1 style={{ marginBottom: 8, fontSize: 22, textAlign: 'center' }}>ERP RH</h1>
+
+        {sessaoExpirada && (
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+            Sua sessão expirou. Faça login novamente.
+          </p>
+        )}
 
         <label htmlFor="email">E-mail</label>
         <input
