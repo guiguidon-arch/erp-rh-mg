@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { formatarCpf } from '../../lib/cpf'
 import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
+import { EPIS_PADRAO } from '../../lib/episPadrao'
 import { gerarEAbrirPdf } from '../../lib/gerarPdf'
 import { FichaRegistro } from '../../pdf/FichaRegistro'
 import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
@@ -53,6 +54,7 @@ export default function FuncionarioDetalhes() {
   const [novoEpiCa, setNovoEpiCa] = useState('')
   const [novoEpiFabricante, setNovoEpiFabricante] = useState('')
   const [novoEpiEntrega, setNovoEpiEntrega] = useState(() => new Date().toISOString().slice(0, 10))
+  const [adicionandoEpisPadrao, setAdicionandoEpisPadrao] = useState(false)
 
   const [novoDependenteNome, setNovoDependenteNome] = useState('')
   const [novoDependenteParentesco, setNovoDependenteParentesco] = useState('')
@@ -121,6 +123,30 @@ export default function FuncionarioDetalhes() {
 
   async function removerEpi(epiId: string) {
     await supabase.from('epis_funcionario').delete().eq('id', epiId)
+    carregar()
+  }
+
+  async function adicionarEpisPadrao() {
+    setAdicionandoEpisPadrao(true)
+
+    const hoje = new Date().toISOString().slice(0, 10)
+    const { error } = await supabase.from('epis_funcionario').insert(
+      EPIS_PADRAO.map((epi) => ({
+        funcionario_id: id,
+        tipo_epi: epi.tipo_epi,
+        quantidade: epi.quantidade,
+        numero_ca: epi.numero_ca,
+        data_entrega: hoje,
+      }))
+    )
+
+    setAdicionandoEpisPadrao(false)
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
     carregar()
   }
 
@@ -559,7 +585,14 @@ export default function FuncionarioDetalhes() {
 
       <section style={{ marginTop: 24 }}>
         <h2>EPIs entregues</h2>
-        {epis.length === 0 && <p>Nenhum EPI cadastrado ainda.</p>}
+        {epis.length === 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ marginBottom: 8 }}>Nenhum EPI cadastrado ainda.</p>
+            <button type="button" disabled={adicionandoEpisPadrao} onClick={adicionarEpisPadrao}>
+              {adicionandoEpisPadrao ? 'Adicionando...' : 'Usar lista padrão de EPIs'}
+            </button>
+          </div>
+        )}
         {epis.length > 0 && (
           <table>
             <thead>
