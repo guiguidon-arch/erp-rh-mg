@@ -141,6 +141,13 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   `@react-pdf/renderer` não funcionam com `position: 'absolute', bottom: N`
   — é preciso usar `top` calculado a partir da altura da página (A4 = 841pt).
   Documentado em `src/pdf/styles.ts`.
+- [x] Migrations 0001-0008 confirmadas aplicadas no banco (usuário não tinha
+  certeza do que já tinha rodado; verifiquei via consulta direta ao schema
+  usando a anon key, sem precisar de acesso admin)
+- [x] Sessão inválida (erro "JWT issued at future" que o usuário encontrou)
+  agora é tratada automaticamente: `src/lib/supabase.ts` intercepta respostas
+  401 com mensagem de JWT, desloga o usuário sozinho e `Login.tsx` mostra
+  "Sua sessão expirou. Faça login novamente." em vez do erro técnico cru.
 - [ ] Sugerido ao usuário: criar um usuário Supabase Auth separado para o
   funcionário que vai testar (em vez de compartilhar a própria senha)
 - [ ] Próximo: item 4 do roadmap (importador de ponto) — usuário já mandou um
