@@ -60,6 +60,8 @@ export interface Funcionario {
   sexo: Sexo | null
   nome_mae: string | null
   nome_pai: string | null
+  nacionalidade: string | null
+  rg_orgao_emissor: string | null
 
   conjuge_cpf: string | null
   conjuge_data_nascimento: string | null

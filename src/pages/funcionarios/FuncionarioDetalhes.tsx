@@ -7,6 +7,7 @@ import { categoriaLabel, statusVencimento } from '../../lib/documentos'
 import { gerarEAbrirPdf } from '../../lib/gerarPdf'
 import { FichaRegistro } from '../../pdf/FichaRegistro'
 import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
+import { ContratoPrestacaoServicosPF } from '../../pdf/ContratoPrestacaoServicosPF'
 import { FichaEpi } from '../../pdf/FichaEpi'
 import type {
   CategoriaDocumento,
@@ -123,7 +124,7 @@ export default function FuncionarioDetalhes() {
     carregar()
   }
 
-  async function gerarPdf(tipo: 'ficha_registro' | 'contrato_experiencia' | 'ficha_epi') {
+  async function gerarPdf(tipo: 'ficha_registro' | 'contrato_experiencia' | 'contrato_prestacao' | 'ficha_epi') {
     if (!funcionario) return
     setGerandoPdf(tipo)
     try {
@@ -131,6 +132,8 @@ export default function FuncionarioDetalhes() {
         await gerarEAbrirPdf(<FichaRegistro funcionario={funcionario} dependentes={dependentes} />, `ficha-registro-${funcionario.nome}.pdf`)
       } else if (tipo === 'contrato_experiencia') {
         await gerarEAbrirPdf(<ContratoExperiencia funcionario={funcionario} />, `contrato-experiencia-${funcionario.nome}.pdf`)
+      } else if (tipo === 'contrato_prestacao') {
+        await gerarEAbrirPdf(<ContratoPrestacaoServicosPF funcionario={funcionario} />, `contrato-prestacao-servicos-${funcionario.nome}.pdf`)
       } else {
         await gerarEAbrirPdf(<FichaEpi funcionario={funcionario} epis={epis} />, `ficha-epi-${funcionario.nome}.pdf`)
       }
@@ -261,6 +264,11 @@ export default function FuncionarioDetalhes() {
               {gerandoPdf === 'contrato_experiencia' ? 'Gerando...' : 'Gerar Contrato de Experiência (PDF)'}
             </button>
           )}
+          {(funcionario.tipo_contrato === 'PJ' || funcionario.tipo_contrato === 'Empreita') && (
+            <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('contrato_prestacao')}>
+              {gerandoPdf === 'contrato_prestacao' ? 'Gerando...' : 'Gerar Contrato de Prestação de Serviços (PDF)'}
+            </button>
+          )}
           <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('ficha_epi')}>
             {gerandoPdf === 'ficha_epi' ? 'Gerando...' : 'Gerar Ficha de EPI (PDF)'}
           </button>
@@ -273,7 +281,12 @@ export default function FuncionarioDetalhes() {
           <dt style={{ color: 'var(--text-muted)' }}>CPF</dt>
           <dd style={{ margin: 0 }}>{formatarCpf(funcionario.cpf)}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>RG</dt>
-          <dd style={{ margin: 0 }}>{funcionario.rg ?? '—'}</dd>
+          <dd style={{ margin: 0 }}>
+            {funcionario.rg ?? '—'}
+            {funcionario.rg_orgao_emissor ? ` — ${funcionario.rg_orgao_emissor}` : ''}
+          </dd>
+          <dt style={{ color: 'var(--text-muted)' }}>Nacionalidade</dt>
+          <dd style={{ margin: 0 }}>{funcionario.nacionalidade ?? '—'}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Nascimento</dt>
           <dd style={{ margin: 0 }}>{formatarData(funcionario.data_nascimento)}</dd>
           <dt style={{ color: 'var(--text-muted)' }}>Local de nascimento</dt>

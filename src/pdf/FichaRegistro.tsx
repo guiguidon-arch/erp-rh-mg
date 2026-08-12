@@ -1,6 +1,7 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer'
 import { styles } from './styles'
 import { Campo, Linha } from './Campo'
+import { CabecalhoFixo, RodapeEmpresa } from './CabecalhoEmpresa'
 import { formatarCpf } from '../lib/cpf'
 import { formatarData } from '../lib/formatters'
 import { EMPRESA } from '../lib/empresa'
@@ -16,10 +17,7 @@ export function FichaRegistro({ funcionario, dependentes }: { funcionario: Funci
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.empresaNome}>{EMPRESA.razaoSocial}</Text>
-          <Text>CNPJ {EMPRESA.cnpj} — {EMPRESA.endereco}</Text>
-        </View>
+        <CabecalhoFixo />
 
         <Text style={styles.titulo}>FICHA DE CADASTRO DE EMPREGADO</Text>
 
@@ -59,6 +57,10 @@ export function FichaRegistro({ funcionario, dependentes }: { funcionario: Funci
             valor={funcionario.ctps_numero ? `${funcionario.ctps_numero} série ${funcionario.ctps_serie ?? '—'}/${funcionario.ctps_uf ?? '—'}` : null}
           />
           <Campo label="RG" valor={funcionario.rg} />
+        </Linha>
+        <Linha>
+          <Campo label="Órgão emissor RG" valor={funcionario.rg_orgao_emissor} />
+          <Campo label="Nacionalidade" valor={funcionario.nacionalidade} />
         </Linha>
         <Linha>
           <Campo label="CPF" valor={formatarCpf(funcionario.cpf)} />
@@ -153,6 +155,8 @@ export function FichaRegistro({ funcionario, dependentes }: { funcionario: Funci
             <Text>{funcionario.nome}</Text>
           </View>
         </View>
+
+        <RodapeEmpresa />
       </Page>
     </Document>
   )

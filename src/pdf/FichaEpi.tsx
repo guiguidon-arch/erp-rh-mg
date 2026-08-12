@@ -1,18 +1,16 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer'
 import { styles } from './styles'
 import { Campo, Linha } from './Campo'
+import { CabecalhoFixo, RodapeEmpresa } from './CabecalhoEmpresa'
 import { formatarCpf } from '../lib/cpf'
 import { formatarData } from '../lib/formatters'
-import { EMPRESA } from '../lib/empresa'
 import type { EpiFuncionario, Funcionario } from '../lib/types'
 
 export function FichaEpi({ funcionario, epis }: { funcionario: Funcionario; epis: EpiFuncionario[] }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.empresaNome}>{EMPRESA.razaoSocial}</Text>
-        </View>
+        <CabecalhoFixo />
 
         <Text style={styles.titulo}>FICHA DE EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL</Text>
 
@@ -22,8 +20,13 @@ export function FichaEpi({ funcionario, epis }: { funcionario: Funcionario; epis
           <Campo label="CPF" valor={formatarCpf(funcionario.cpf)} />
         </Linha>
         <Linha>
+          <Campo label="Nº de registro" valor={null} />
           <Campo label="Função" valor={funcionario.cargo} />
-          <Campo label="Admissão" valor={formatarData(funcionario.data_admissao)} />
+          <Campo label="Setor" valor={funcionario.departamento} />
+        </Linha>
+        <Linha>
+          <Campo label="Data de admissão" valor={formatarData(funcionario.data_admissao)} />
+          <Campo label="Data de demissão" valor={null} />
         </Linha>
 
         <Text style={{ ...styles.paragrafo, marginTop: 12, fontSize: 9 }}>
@@ -36,21 +39,23 @@ export function FichaEpi({ funcionario, epis }: { funcionario: Funcionario; epis
 
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={{ width: '8%' }}>Qtd.</Text>
-            <Text style={{ width: '27%' }}>Tipo de EPI</Text>
-            <Text style={{ width: '15%' }}>Nº CA</Text>
-            <Text style={{ width: '15%' }}>Entrega</Text>
-            <Text style={{ width: '15%' }}>Devolução</Text>
-            <Text style={{ width: '20%' }}>Fabricante</Text>
+            <Text style={{ width: '7%' }}>Qtd.</Text>
+            <Text style={{ width: '22%' }}>Tipo de EPI</Text>
+            <Text style={{ width: '10%' }}>Nº CA</Text>
+            <Text style={{ width: '12%' }}>Entrega</Text>
+            <Text style={{ width: '12%' }}>Devolução</Text>
+            <Text style={{ width: '17%' }}>Fabricante</Text>
+            <Text style={{ width: '20%' }}>Assinatura</Text>
           </View>
           {epis.map((epi) => (
             <View style={styles.tableRow} key={epi.id}>
-              <Text style={{ width: '8%' }}>{epi.quantidade}</Text>
-              <Text style={{ width: '27%' }}>{epi.tipo_epi}</Text>
-              <Text style={{ width: '15%' }}>{epi.numero_ca ?? '—'}</Text>
-              <Text style={{ width: '15%' }}>{formatarData(epi.data_entrega)}</Text>
-              <Text style={{ width: '15%' }}>{formatarData(epi.data_devolucao)}</Text>
-              <Text style={{ width: '20%' }}>{epi.fabricante ?? '—'}</Text>
+              <Text style={{ width: '7%' }}>{epi.quantidade}</Text>
+              <Text style={{ width: '22%' }}>{epi.tipo_epi}</Text>
+              <Text style={{ width: '10%' }}>{epi.numero_ca ?? '—'}</Text>
+              <Text style={{ width: '12%' }}>{formatarData(epi.data_entrega)}</Text>
+              <Text style={{ width: '12%' }}>{formatarData(epi.data_devolucao)}</Text>
+              <Text style={{ width: '17%' }}>{epi.fabricante ?? '—'}</Text>
+              <Text style={{ width: '20%' }}></Text>
             </View>
           ))}
           {epis.length === 0 && <Text style={{ marginTop: 6 }}>Nenhum EPI cadastrado até o momento.</Text>}
@@ -66,6 +71,8 @@ export function FichaEpi({ funcionario, epis }: { funcionario: Funcionario; epis
             <Text>{funcionario.nome}</Text>
           </View>
         </View>
+
+        <RodapeEmpresa />
       </Page>
     </Document>
   )

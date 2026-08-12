@@ -2,14 +2,54 @@ import { StyleSheet } from '@react-pdf/renderer'
 
 export const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: 90,
+    paddingBottom: 60,
+    paddingHorizontal: 40,
     fontSize: 10,
     fontFamily: 'Helvetica',
     color: '#1a1a1a',
   },
+  headerFixed: {
+    position: 'absolute',
+    top: 30,
+    left: 40,
+    right: 40,
+  },
+  headerLogo: {
+    height: 32,
+    width: 'auto',
+    objectFit: 'contain',
+  },
+  headerLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    marginTop: 10,
+  },
+  footerFixed: {
+    position: 'absolute',
+    top: 782,
+    left: 40,
+    right: 40,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    paddingTop: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  footerText: {
+    fontSize: 7,
+    color: '#555',
+    lineHeight: 1.4,
+  },
   header: {
     marginBottom: 16,
-    textAlign: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    height: 44,
+    width: 'auto',
+    marginBottom: 6,
+    objectFit: 'contain',
   },
   empresaNome: {
     fontSize: 12,

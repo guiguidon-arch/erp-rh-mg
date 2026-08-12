@@ -56,6 +56,8 @@ const vazio = {
   sexo: '' as Sexo | '',
   nome_mae: '',
   nome_pai: '',
+  nacionalidade: 'Brasileiro(a)',
+  rg_orgao_emissor: '',
 
   conjuge_cpf: '',
   conjuge_data_nascimento: '',
@@ -151,6 +153,8 @@ export default function FuncionarioForm() {
             sexo: data.sexo ?? '',
             nome_mae: data.nome_mae ?? '',
             nome_pai: data.nome_pai ?? '',
+            nacionalidade: data.nacionalidade ?? 'Brasileiro(a)',
+            rg_orgao_emissor: data.rg_orgao_emissor ?? '',
 
             conjuge_cpf: data.conjuge_cpf ?? '',
             conjuge_data_nascimento: data.conjuge_data_nascimento ?? '',
@@ -276,6 +280,8 @@ export default function FuncionarioForm() {
       sexo: form.sexo || null,
       nome_mae: form.nome_mae || null,
       nome_pai: form.nome_pai || null,
+      nacionalidade: form.nacionalidade || null,
+      rg_orgao_emissor: form.rg_orgao_emissor || null,
 
       conjuge_cpf: casado ? form.conjuge_cpf || null : null,
       conjuge_data_nascimento: casado ? form.conjuge_data_nascimento || null : null,
@@ -333,6 +339,15 @@ export default function FuncionarioForm() {
           <div>
             <label htmlFor="rg">RG</label>
             <input id="rg" value={form.rg} onChange={(e) => set('rg', e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="rg_orgao_emissor">Órgão emissor do RG</label>
+            <input
+              id="rg_orgao_emissor"
+              placeholder="Ex.: SSP/SP"
+              value={form.rg_orgao_emissor}
+              onChange={(e) => set('rg_orgao_emissor', e.target.value)}
+            />
           </div>
         </div>
 
@@ -393,6 +408,14 @@ export default function FuncionarioForm() {
               <option value="Masculino">Masculino</option>
               <option value="Feminino">Feminino</option>
             </select>
+          </div>
+          <div>
+            <label htmlFor="nacionalidade">Nacionalidade</label>
+            <input
+              id="nacionalidade"
+              value={form.nacionalidade}
+              onChange={(e) => set('nacionalidade', e.target.value)}
+            />
           </div>
         </div>
 
