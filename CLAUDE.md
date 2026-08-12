@@ -119,15 +119,30 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   horário de trabalho detalhado por dia da semana (mantido o campo simples
   "Jornada") e os campos de aposentadoria/imóvel-FGTS da ficha (raramente
   usados, específicos da Caixa Econômica).
-- [ ] Pendente: com os campos do cadastro agora completos, o próximo passo é
-  recriar os 4 documentos (ficha de registro, contrato de experiência,
-  contrato de prestação de serviços, ficha de EPI) como geração automática de
-  PDF preenchido com os dados do funcionário (decisão do usuário: PDF direto
-  no sistema, não preenchimento de Word — quer os documentos prontos para
-  assinatura eletrônica). Isso é o item 3 do roadmap. Os arquivos-modelo estão
-  em `C:\Users\guilh\Downloads\` (contratos em .docx, ficha de EPI em .xlsx) —
-  ainda não analisados a fundo, só a ficha de registro foi mapeada campo a
-  campo até agora. O usuário também mandou uma folha de ponto (.xlsx) — isso é
-  para o item 4 do roadmap (importação de ponto), não usar agora.
+- [x] Item 3 do roadmap concluído: geração automática de PDF (biblioteca
+  `@react-pdf/renderer`, 100% client-side, sem backend) para os 4 documentos —
+  Ficha de Registro, Contrato de Experiência, Ficha de EPI, e Contrato de
+  Prestação de Serviços/Empreitada (duas versões: pessoa física, gerada do
+  cadastro de funcionário com tipo "Empreita"/"PJ"; e pessoa jurídica, gerada
+  do cadastro de Prestador/CNPJ — os dois casos acontecem na empresa).
+  Templates em `src/pdf/`. Timbre completo (logo + linha no topo, dados da
+  empresa + numeração "Página X de Y" no rodapé) repetido em todas as páginas
+  de cada PDF, replicando os modelos profissionais que o usuário mandou
+  (`MODELO - CT/Ficha ... .pdf` em Downloads). Dados fixos da empresa
+  (CNPJ, CNAE, CREA, dados completos do sócio administrador, registro na
+  JUCESP) centralizados em `src/lib/empresa.ts`.
+- [x] Cadastro de EPIs entregues por funcionário (`epis_funcionario`,
+  migration `0006`) e cadastro de Prestadores/CNPJ + Contratos de empreitada
+  (`prestadores` e `contratos_prestador`, migration `0007`), com telas de
+  CRUD completas.
+- [x] Campos `nacionalidade` e `rg_orgao_emissor` adicionados ao funcionário
+  (migration `0008`), exigidos pelo modelo novo de contrato.
+- [x] Bug de posicionamento corrigido: elementos fixos (rodapé) no
+  `@react-pdf/renderer` não funcionam com `position: 'absolute', bottom: N`
+  — é preciso usar `top` calculado a partir da altura da página (A4 = 841pt).
+  Documentado em `src/pdf/styles.ts`.
 - [ ] Sugerido ao usuário: criar um usuário Supabase Auth separado para o
   funcionário que vai testar (em vez de compartilhar a própria senha)
+- [ ] Próximo: item 4 do roadmap (importador de ponto) — usuário já mandou um
+  exemplo de folha de ponto (.xlsx) em `C:\Users\guilh\Downloads\`, ainda não
+  analisado
