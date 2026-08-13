@@ -168,6 +168,16 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   **Pendente do usuário**: criar conta na Autentique, gerar API key, e
   configurar `AUTENTIQUE_API_TOKEN` nas variáveis de ambiente da Vercel — não
   testado de ponta a ponta ainda (não tenho a chave real).
+- [x] Envio do link de assinatura por WhatsApp (pedido do usuário): a
+  Autentique aceita signatário por telefone (`phone` no formato +55... com
+  `delivery_method: DELIVERY_METHOD_WHATSAPP`). Seletor na página do
+  funcionário escolhe E-mail ou WhatsApp para o colaborador (padrão:
+  WhatsApp quando há telefone válido no cadastro); o representante da
+  empresa sempre assina por e-mail. Conversão de telefone livre para formato
+  internacional em `telefoneParaWhatsapp()` (`src/lib/autentique.ts`).
+  Token da Autentique confirmado funcionando em produção (testado via
+  chamada à function com ID falso — a Autentique respondeu, provando que o
+  token está configurado corretamente na Vercel).
 - [ ] Próximo: item 6 do roadmap (importador de ponto) — usuário já mandou um
   exemplo de folha de ponto (.xlsx) em `C:\Users\guilh\Downloads\`, ainda não
   analisado
