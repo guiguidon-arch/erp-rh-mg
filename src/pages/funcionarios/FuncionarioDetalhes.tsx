@@ -6,7 +6,7 @@ import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
 import { EPIS_PADRAO } from '../../lib/episPadrao'
 import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
-import { enviarParaAssinatura, verificarStatusAssinatura, type Signatario } from '../../lib/autentique'
+import { enviarParaAssinatura, telefoneParaWhatsapp, verificarStatusAssinatura, type Signatario } from '../../lib/autentique'
 import { EMPRESA } from '../../lib/empresa'
 import { FichaRegistro } from '../../pdf/FichaRegistro'
 import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
@@ -68,6 +68,7 @@ export default function FuncionarioDetalhes() {
   const [gerandoPdf, setGerandoPdf] = useState<string | null>(null)
   const [enviandoAssinatura, setEnviandoAssinatura] = useState<string | null>(null)
   const [verificandoStatus, setVerificandoStatus] = useState<string | null>(null)
+  const [meioEnvio, setMeioEnvio] = useState<'email' | 'whatsapp'>('email')
 
   const [novoEpiTipo, setNovoEpiTipo] = useState('')
   const [novoEpiQuantidade, setNovoEpiQuantidade] = useState('1')
@@ -108,7 +109,11 @@ export default function FuncionarioDetalhes() {
     if (erroFunc) {
       setError(erroFunc.message)
     } else {
-      setFuncionario(func as unknown as FuncionarioComObra)
+      const funcCarregado = func as unknown as FuncionarioComObra
+      if (!funcionario) {
+        setMeioEnvio(telefoneParaWhatsapp(funcCarregado.telefone) ? 'whatsapp' : 'email')
+      }
+      setFuncionario(funcCarregado)
       setDependentes(deps ?? [])
       setDocumentos(docs ?? [])
       setEpis(episData ?? [])
@@ -191,10 +196,23 @@ export default function FuncionarioDetalhes() {
     return `${prefixos[tipo]}-${funcionario?.nome}.pdf`
   }
 
-  function signatariosPara(tipo: TipoDocumentoAssinatura): Signatario[] | null {
-    if (!funcionario?.email) return null
+  function signatariosPara(tipo: TipoDocumentoAssinatura): Signatario[] | string {
+    if (!funcionario) return 'Funcionário não carregado.'
 
-    const funcionarioSignatario: Signatario = { name: funcionario.nome, email: funcionario.email }
+    let funcionarioSignatario: Signatario
+    if (meioEnvio === 'whatsapp') {
+      const telefone = telefoneParaWhatsapp(funcionario.telefone)
+      if (!telefone) {
+        return 'O telefone cadastrado não parece um celular válido (precisa de DDD + número). Corrija o cadastro ou envie por e-mail.'
+      }
+      funcionarioSignatario = { phone: telefone, delivery_method: 'DELIVERY_METHOD_WHATSAPP' }
+    } else {
+      if (!funcionario.email) {
+        return 'Este funcionário não tem e-mail cadastrado. Adicione um e-mail no cadastro ou envie por WhatsApp.'
+      }
+      funcionarioSignatario = { name: funcionario.nome, email: funcionario.email }
+    }
+
     const empresaSignatario: Signatario = { name: EMPRESA.representante.nome, email: EMPRESA.representante.email }
 
     if (tipo === 'ficha_epi') return [funcionarioSignatario]
@@ -217,8 +235,8 @@ export default function FuncionarioDetalhes() {
     if (!funcionario) return
 
     const signatarios = signatariosPara(tipo)
-    if (!signatarios) {
-      setError('Este funcionário não tem e-mail cadastrado. Edite o cadastro e adicione um e-mail antes de enviar para assinatura.')
+    if (typeof signatarios === 'string') {
+      setError(signatarios)
       return
     }
 
@@ -384,6 +402,22 @@ export default function FuncionarioDetalhes() {
 
       <section style={{ marginTop: 24 }}>
         <h2>Documentos para assinatura</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+          <label htmlFor="meio-envio" style={{ margin: 0 }}>
+            O colaborador recebe o link por:
+          </label>
+          <select
+            id="meio-envio"
+            style={{ width: 'auto' }}
+            value={meioEnvio}
+            onChange={(e) => setMeioEnvio(e.target.value as 'email' | 'whatsapp')}
+          >
+            <option value="email">E-mail {funcionario.email ? `(${funcionario.email})` : '(não cadastrado)'}</option>
+            <option value="whatsapp">
+              WhatsApp {telefoneParaWhatsapp(funcionario.telefone) ?? '(telefone não cadastrado)'}
+            </option>
+          </select>
+        </div>
         {(
           [
             'ficha_registro',

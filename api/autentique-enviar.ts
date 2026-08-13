@@ -1,6 +1,8 @@
 interface Signatario {
   name?: string
-  email: string
+  email?: string
+  phone?: string
+  delivery_method?: 'DELIVERY_METHOD_WHATSAPP' | 'DELIVERY_METHOD_SMS'
 }
 
 interface RequestBody {
@@ -43,6 +45,11 @@ export default async function handler(req: { method?: string; body: RequestBody 
     return
   }
 
+  if (signatarios.some((s) => !s.email && !s.phone)) {
+    res.status(400).json({ error: 'Cada signatário precisa ter e-mail ou telefone.' })
+    return
+  }
+
   try {
     const pdfBuffer = Buffer.from(pdfBase64, 'base64')
 
@@ -50,7 +57,11 @@ export default async function handler(req: { method?: string; body: RequestBody 
       query: MUTATION,
       variables: {
         document: { name: nomeDocumento },
-        signers: signatarios.map((s) => ({ email: s.email, name: s.name, action: 'SIGN' })),
+        signers: signatarios.map((s) =>
+          s.phone
+            ? { phone: s.phone, delivery_method: s.delivery_method ?? 'DELIVERY_METHOD_WHATSAPP', action: 'SIGN' }
+            : { email: s.email, name: s.name, action: 'SIGN' }
+        ),
         file: null,
       },
     })

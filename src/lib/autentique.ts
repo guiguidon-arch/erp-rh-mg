@@ -9,7 +9,30 @@ function blobParaBase64(blob: Blob): Promise<string> {
 
 export interface Signatario {
   name?: string
-  email: string
+  email?: string
+  phone?: string
+  delivery_method?: 'DELIVERY_METHOD_WHATSAPP'
+}
+
+/**
+ * Converte um telefone digitado livremente (ex.: "15 98813-7394") para o
+ * formato internacional exigido pela Autentique (ex.: "+5515988137394").
+ * Retorna null se o número não parecer um celular brasileiro válido.
+ */
+export function telefoneParaWhatsapp(telefone: string | null): string | null {
+  if (!telefone) return null
+
+  let digitos = telefone.replace(/\D/g, '').replace(/^0+/, '')
+
+  if (digitos.length === 10 || digitos.length === 11) {
+    digitos = '55' + digitos
+  }
+
+  if (digitos.length === 12 || digitos.length === 13) {
+    return '+' + digitos
+  }
+
+  return null
 }
 
 export async function enviarParaAssinatura(pdfBlob: Blob, nomeDocumento: string, signatarios: Signatario[]) {
