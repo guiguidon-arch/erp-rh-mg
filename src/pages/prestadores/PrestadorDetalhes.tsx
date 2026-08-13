@@ -2,9 +2,18 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatarCnpj } from '../../lib/cnpj'
-import { gerarEAbrirPdf } from '../../lib/gerarPdf'
+import { formatarData } from '../../lib/formatters'
+import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
+import { enviarParaAssinatura, verificarStatusAssinatura } from '../../lib/autentique'
+import { EMPRESA } from '../../lib/empresa'
 import { ContratoPrestacaoServicos } from '../../pdf/ContratoPrestacaoServicos'
-import type { ContratoPrestador, Obra, Prestador } from '../../lib/types'
+import type { ContratoPrestador, EnvioAssinatura, Obra, Prestador } from '../../lib/types'
+
+const statusAssinaturaLabel: Record<EnvioAssinatura['status'], string> = {
+  enviado: 'Aguardando assinatura',
+  assinado: 'Assinado',
+  rejeitado: 'Rejeitado',
+}
 
 export default function PrestadorDetalhes() {
   const { id } = useParams()
@@ -13,9 +22,12 @@ export default function PrestadorDetalhes() {
   const [prestador, setPrestador] = useState<Prestador | null>(null)
   const [contratos, setContratos] = useState<ContratoPrestador[]>([])
   const [obras, setObras] = useState<Obra[]>([])
+  const [envios, setEnvios] = useState<EnvioAssinatura[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gerandoPdf, setGerandoPdf] = useState<string | null>(null)
+  const [enviandoAssinatura, setEnviandoAssinatura] = useState<string | null>(null)
+  const [verificandoStatus, setVerificandoStatus] = useState<string | null>(null)
 
   const [escopoServico, setEscopoServico] = useState('')
   const [valorTotal, setValorTotal] = useState('')
@@ -35,10 +47,11 @@ export default function PrestadorDetalhes() {
     setLoading(true)
     setError(null)
 
-    const [{ data: p, error: erroP }, { data: cs }, { data: os }] = await Promise.all([
+    const [{ data: p, error: erroP }, { data: cs }, { data: os }, { data: enviosData }] = await Promise.all([
       supabase.from('prestadores').select('*').eq('id', id).single(),
       supabase.from('contratos_prestador').select('*').eq('prestador_id', id).order('created_at', { ascending: false }),
       supabase.from('obras').select('*').order('nome'),
+      supabase.from('envios_assinatura').select('*').eq('prestador_id', id).order('created_at', { ascending: false }),
     ])
 
     if (erroP) {
@@ -47,6 +60,7 @@ export default function PrestadorDetalhes() {
       setPrestador(p)
       setContratos(cs ?? [])
       setObras(os ?? [])
+      setEnvios(enviosData ?? [])
     }
     setLoading(false)
   }
@@ -108,6 +122,70 @@ export default function PrestadorDetalhes() {
     }
   }
 
+  async function enviarAssinaturaContrato(contrato: ContratoPrestador) {
+    if (!prestador) return
+
+    if (!prestador.email) {
+      setError('Este prestador não tem e-mail cadastrado. Edite o cadastro e adicione um e-mail antes de enviar para assinatura.')
+      return
+    }
+
+    setEnviandoAssinatura(contrato.id)
+    setError(null)
+
+    try {
+      const obra = obras.find((o) => o.id === contrato.obra_id) ?? null
+      const blob = await gerarBlobPdf(<ContratoPrestacaoServicos prestador={prestador} contrato={contrato} obra={obra} />)
+      const { documentId } = await enviarParaAssinatura(blob, `contrato-prestacao-servicos-${prestador.razao_social}.pdf`, [
+        { name: prestador.responsavel_nome ?? prestador.razao_social, email: prestador.email },
+        { name: EMPRESA.representante.nome, email: EMPRESA.representante.email },
+      ])
+
+      const { error: erroInsert } = await supabase.from('envios_assinatura').insert({
+        prestador_id: id,
+        contrato_prestador_id: contrato.id,
+        tipo_documento: 'contrato_prestacao',
+        autentique_document_id: documentId,
+      })
+
+      if (erroInsert) {
+        setError(erroInsert.message)
+        return
+      }
+
+      carregar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao enviar para assinatura.')
+    } finally {
+      setEnviandoAssinatura(null)
+    }
+  }
+
+  async function atualizarStatusEnvio(envio: EnvioAssinatura) {
+    setVerificandoStatus(envio.id)
+    setError(null)
+
+    try {
+      const { status, linkDocumento } = await verificarStatusAssinatura(envio.autentique_document_id)
+
+      const { error: erroUpdate } = await supabase
+        .from('envios_assinatura')
+        .update({ status, link_documento: linkDocumento })
+        .eq('id', envio.id)
+
+      if (erroUpdate) {
+        setError(erroUpdate.message)
+        return
+      }
+
+      carregar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao verificar status.')
+    } finally {
+      setVerificandoStatus(null)
+    }
+  }
+
   if (loading) return <p>Carregando...</p>
   if (error) return <p className="error-text">Erro: {error}</p>
   if (!prestador) return <p>Prestador não encontrado.</p>
@@ -165,9 +243,12 @@ export default function PrestadorDetalhes() {
                   <td>{c.valor_total != null ? `R$ ${c.valor_total.toFixed(2)}` : '—'}</td>
                   <td>{c.prazo_dias != null ? `${c.prazo_dias} dias` : '—'}</td>
                   <td>{obras.find((o) => o.id === c.obra_id)?.nome ?? '—'}</td>
-                  <td style={{ display: 'flex', gap: 8 }}>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdfContrato(c)}>
-                      {gerandoPdf === c.id ? 'Gerando...' : 'Gerar PDF'}
+                      {gerandoPdf === c.id ? 'Gerando...' : 'Baixar PDF'}
+                    </button>
+                    <button type="button" disabled={enviandoAssinatura !== null} onClick={() => enviarAssinaturaContrato(c)}>
+                      {enviandoAssinatura === c.id ? 'Enviando...' : 'Enviar p/ assinatura'}
                     </button>
                     <button type="button" className="danger" onClick={() => removerContrato(c.id)}>
                       Remover
@@ -264,6 +345,41 @@ export default function PrestadorDetalhes() {
           </div>
         </form>
       </section>
+
+      {envios.length > 0 && (
+        <section style={{ marginTop: 24, marginBottom: 24 }}>
+          <h2>Histórico de assinaturas</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Enviado em</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {envios.map((envio) => (
+                <tr key={envio.id}>
+                  <td>
+                    <span className="badge">{statusAssinaturaLabel[envio.status]}</span>
+                  </td>
+                  <td>{formatarData(envio.created_at)}</td>
+                  <td style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" disabled={verificandoStatus !== null} onClick={() => atualizarStatusEnvio(envio)}>
+                      {verificandoStatus === envio.id ? 'Verificando...' : 'Verificar status'}
+                    </button>
+                    {envio.link_documento && (
+                      <a href={envio.link_documento} target="_blank" rel="noreferrer">
+                        Baixar assinado
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </div>
   )
 }

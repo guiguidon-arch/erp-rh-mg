@@ -5,7 +5,9 @@ import { formatarCpf } from '../../lib/cpf'
 import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
 import { EPIS_PADRAO } from '../../lib/episPadrao'
-import { gerarEAbrirPdf } from '../../lib/gerarPdf'
+import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
+import { enviarParaAssinatura, verificarStatusAssinatura, type Signatario } from '../../lib/autentique'
+import { EMPRESA } from '../../lib/empresa'
 import { FichaRegistro } from '../../pdf/FichaRegistro'
 import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
 import { ContratoPrestacaoServicosPF } from '../../pdf/ContratoPrestacaoServicosPF'
@@ -14,11 +16,26 @@ import type {
   CategoriaDocumento,
   Dependente,
   DocumentoFuncionario,
+  EnvioAssinatura,
   EpiFuncionario,
   FuncionarioComObra,
   HistoricoFuncionario,
   StatusFuncionario,
+  TipoDocumentoAssinatura,
 } from '../../lib/types'
+
+const tipoDocumentoLabel: Record<TipoDocumentoAssinatura, string> = {
+  ficha_registro: 'Ficha de Registro',
+  contrato_experiencia: 'Contrato de Experiência',
+  contrato_prestacao: 'Contrato de Prestação de Serviços',
+  ficha_epi: 'Ficha de EPI',
+}
+
+const statusAssinaturaLabel: Record<EnvioAssinatura['status'], string> = {
+  enviado: 'Aguardando assinatura',
+  assinado: 'Assinado',
+  rejeitado: 'Rejeitado',
+}
 
 const statusLabel: Record<StatusFuncionario, string> = {
   ativo: 'Ativo',
@@ -45,9 +62,12 @@ export default function FuncionarioDetalhes() {
   const [documentos, setDocumentos] = useState<DocumentoFuncionario[]>([])
   const [epis, setEpis] = useState<EpiFuncionario[]>([])
   const [historico, setHistorico] = useState<HistoricoFuncionario[]>([])
+  const [envios, setEnvios] = useState<EnvioAssinatura[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gerandoPdf, setGerandoPdf] = useState<string | null>(null)
+  const [enviandoAssinatura, setEnviandoAssinatura] = useState<string | null>(null)
+  const [verificandoStatus, setVerificandoStatus] = useState<string | null>(null)
 
   const [novoEpiTipo, setNovoEpiTipo] = useState('')
   const [novoEpiQuantidade, setNovoEpiQuantidade] = useState('1')
@@ -75,13 +95,15 @@ export default function FuncionarioDetalhes() {
     setLoading(true)
     setError(null)
 
-    const [{ data: func, error: erroFunc }, { data: deps }, { data: docs }, { data: episData }, { data: hist }] = await Promise.all([
-      supabase.from('funcionarios').select('*, obra:obras(id, nome)').eq('id', id).single(),
-      supabase.from('dependentes').select('*').eq('funcionario_id', id).order('nome'),
-      supabase.from('documentos_funcionario').select('*').eq('funcionario_id', id).order('created_at', { ascending: false }),
-      supabase.from('epis_funcionario').select('*').eq('funcionario_id', id).order('data_entrega', { ascending: false }),
-      supabase.from('historico_funcionario').select('*').eq('funcionario_id', id).order('data', { ascending: false }),
-    ])
+    const [{ data: func, error: erroFunc }, { data: deps }, { data: docs }, { data: episData }, { data: hist }, { data: enviosData }] =
+      await Promise.all([
+        supabase.from('funcionarios').select('*, obra:obras(id, nome)').eq('id', id).single(),
+        supabase.from('dependentes').select('*').eq('funcionario_id', id).order('nome'),
+        supabase.from('documentos_funcionario').select('*').eq('funcionario_id', id).order('created_at', { ascending: false }),
+        supabase.from('epis_funcionario').select('*').eq('funcionario_id', id).order('data_entrega', { ascending: false }),
+        supabase.from('historico_funcionario').select('*').eq('funcionario_id', id).order('data', { ascending: false }),
+        supabase.from('envios_assinatura').select('*').eq('funcionario_id', id).order('created_at', { ascending: false }),
+      ])
 
     if (erroFunc) {
       setError(erroFunc.message)
@@ -91,6 +113,7 @@ export default function FuncionarioDetalhes() {
       setDocumentos(docs ?? [])
       setEpis(episData ?? [])
       setHistorico(hist ?? [])
+      setEnvios(enviosData ?? [])
     }
     setLoading(false)
   }
@@ -150,23 +173,103 @@ export default function FuncionarioDetalhes() {
     carregar()
   }
 
-  async function gerarPdf(tipo: 'ficha_registro' | 'contrato_experiencia' | 'contrato_prestacao' | 'ficha_epi') {
+  function montarDocumento(tipo: TipoDocumentoAssinatura) {
+    if (!funcionario) return null
+    if (tipo === 'ficha_registro') return <FichaRegistro funcionario={funcionario} dependentes={dependentes} />
+    if (tipo === 'contrato_experiencia') return <ContratoExperiencia funcionario={funcionario} />
+    if (tipo === 'contrato_prestacao') return <ContratoPrestacaoServicosPF funcionario={funcionario} />
+    return <FichaEpi funcionario={funcionario} epis={epis} />
+  }
+
+  function nomeArquivo(tipo: TipoDocumentoAssinatura) {
+    const prefixos: Record<TipoDocumentoAssinatura, string> = {
+      ficha_registro: 'ficha-registro',
+      contrato_experiencia: 'contrato-experiencia',
+      contrato_prestacao: 'contrato-prestacao-servicos',
+      ficha_epi: 'ficha-epi',
+    }
+    return `${prefixos[tipo]}-${funcionario?.nome}.pdf`
+  }
+
+  function signatariosPara(tipo: TipoDocumentoAssinatura): Signatario[] | null {
+    if (!funcionario?.email) return null
+
+    const funcionarioSignatario: Signatario = { name: funcionario.nome, email: funcionario.email }
+    const empresaSignatario: Signatario = { name: EMPRESA.representante.nome, email: EMPRESA.representante.email }
+
+    if (tipo === 'ficha_epi') return [funcionarioSignatario]
+    return [funcionarioSignatario, empresaSignatario]
+  }
+
+  async function gerarPdf(tipo: TipoDocumentoAssinatura) {
     if (!funcionario) return
     setGerandoPdf(tipo)
     try {
-      if (tipo === 'ficha_registro') {
-        await gerarEAbrirPdf(<FichaRegistro funcionario={funcionario} dependentes={dependentes} />, `ficha-registro-${funcionario.nome}.pdf`)
-      } else if (tipo === 'contrato_experiencia') {
-        await gerarEAbrirPdf(<ContratoExperiencia funcionario={funcionario} />, `contrato-experiencia-${funcionario.nome}.pdf`)
-      } else if (tipo === 'contrato_prestacao') {
-        await gerarEAbrirPdf(<ContratoPrestacaoServicosPF funcionario={funcionario} />, `contrato-prestacao-servicos-${funcionario.nome}.pdf`)
-      } else {
-        await gerarEAbrirPdf(<FichaEpi funcionario={funcionario} epis={epis} />, `ficha-epi-${funcionario.nome}.pdf`)
-      }
+      await gerarEAbrirPdf(montarDocumento(tipo)!, nomeArquivo(tipo))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao gerar PDF.')
     } finally {
       setGerandoPdf(null)
+    }
+  }
+
+  async function enviarAssinatura(tipo: TipoDocumentoAssinatura) {
+    if (!funcionario) return
+
+    const signatarios = signatariosPara(tipo)
+    if (!signatarios) {
+      setError('Este funcionário não tem e-mail cadastrado. Edite o cadastro e adicione um e-mail antes de enviar para assinatura.')
+      return
+    }
+
+    setEnviandoAssinatura(tipo)
+    setError(null)
+
+    try {
+      const blob = await gerarBlobPdf(montarDocumento(tipo)!)
+      const { documentId } = await enviarParaAssinatura(blob, nomeArquivo(tipo), signatarios)
+
+      const { error: erroInsert } = await supabase.from('envios_assinatura').insert({
+        funcionario_id: id,
+        tipo_documento: tipo,
+        autentique_document_id: documentId,
+      })
+
+      if (erroInsert) {
+        setError(erroInsert.message)
+        return
+      }
+
+      carregar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao enviar para assinatura.')
+    } finally {
+      setEnviandoAssinatura(null)
+    }
+  }
+
+  async function atualizarStatusEnvio(envio: EnvioAssinatura) {
+    setVerificandoStatus(envio.id)
+    setError(null)
+
+    try {
+      const { status, linkDocumento } = await verificarStatusAssinatura(envio.autentique_document_id)
+
+      const { error: erroUpdate } = await supabase
+        .from('envios_assinatura')
+        .update({ status, link_documento: linkDocumento })
+        .eq('id', envio.id)
+
+      if (erroUpdate) {
+        setError(erroUpdate.message)
+        return
+      }
+
+      carregar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao verificar status.')
+    } finally {
+      setVerificandoStatus(null)
     }
   }
 
@@ -281,24 +384,65 @@ export default function FuncionarioDetalhes() {
 
       <section style={{ marginTop: 24 }}>
         <h2>Documentos para assinatura</h2>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('ficha_registro')}>
-            {gerandoPdf === 'ficha_registro' ? 'Gerando...' : 'Gerar Ficha de Registro (PDF)'}
-          </button>
-          {funcionario.tipo_contrato !== 'PJ' && funcionario.tipo_contrato !== 'Empreita' && (
-            <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('contrato_experiencia')}>
-              {gerandoPdf === 'contrato_experiencia' ? 'Gerando...' : 'Gerar Contrato de Experiência (PDF)'}
+        {(
+          [
+            'ficha_registro',
+            ...(funcionario.tipo_contrato !== 'PJ' && funcionario.tipo_contrato !== 'Empreita' ? (['contrato_experiencia'] as const) : []),
+            ...(funcionario.tipo_contrato === 'PJ' || funcionario.tipo_contrato === 'Empreita' ? (['contrato_prestacao'] as const) : []),
+            'ficha_epi',
+          ] as TipoDocumentoAssinatura[]
+        ).map((tipo) => (
+          <div key={tipo} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <span style={{ minWidth: 220 }}>{tipoDocumentoLabel[tipo]}</span>
+            <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf(tipo)}>
+              {gerandoPdf === tipo ? 'Gerando...' : 'Baixar PDF'}
             </button>
-          )}
-          {(funcionario.tipo_contrato === 'PJ' || funcionario.tipo_contrato === 'Empreita') && (
-            <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('contrato_prestacao')}>
-              {gerandoPdf === 'contrato_prestacao' ? 'Gerando...' : 'Gerar Contrato de Prestação de Serviços (PDF)'}
+            <button type="button" disabled={enviandoAssinatura !== null} onClick={() => enviarAssinatura(tipo)}>
+              {enviandoAssinatura === tipo ? 'Enviando...' : 'Enviar p/ assinatura (Autentique)'}
             </button>
-          )}
-          <button type="button" disabled={gerandoPdf !== null} onClick={() => gerarPdf('ficha_epi')}>
-            {gerandoPdf === 'ficha_epi' ? 'Gerando...' : 'Gerar Ficha de EPI (PDF)'}
-          </button>
-        </div>
+          </div>
+        ))}
+
+        {envios.length > 0 && (
+          <>
+            <h2 style={{ marginTop: 16, fontSize: 15 }}>Histórico de assinaturas</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Documento</th>
+                  <th>Status</th>
+                  <th>Enviado em</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {envios.map((envio) => (
+                  <tr key={envio.id}>
+                    <td>{tipoDocumentoLabel[envio.tipo_documento]}</td>
+                    <td>
+                      <span className="badge">{statusAssinaturaLabel[envio.status]}</span>
+                    </td>
+                    <td>{formatarData(envio.created_at)}</td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        disabled={verificandoStatus !== null}
+                        onClick={() => atualizarStatusEnvio(envio)}
+                      >
+                        {verificandoStatus === envio.id ? 'Verificando...' : 'Verificar status'}
+                      </button>
+                      {envio.link_documento && (
+                        <a href={envio.link_documento} target="_blank" rel="noreferrer">
+                          Baixar assinado
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </section>
 
       <section style={{ marginTop: 24 }}>

@@ -134,6 +134,23 @@ export interface ContratoPrestadorComRelacoes extends ContratoPrestador {
   obra: Pick<Obra, 'id' | 'nome'> | null
 }
 
+export type TipoDocumentoAssinatura = 'ficha_registro' | 'contrato_experiencia' | 'contrato_prestacao' | 'ficha_epi'
+export type StatusEnvioAssinatura = 'enviado' | 'assinado' | 'rejeitado'
+
+export interface EnvioAssinatura {
+  id: string
+  funcionario_id: string | null
+  prestador_id: string | null
+  contrato_prestador_id: string | null
+  tipo_documento: TipoDocumentoAssinatura
+  autentique_document_id: string
+  status: StatusEnvioAssinatura
+  link_documento: string | null
+  enviado_por: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type CategoriaDocumento =
   | 'contrato'
   | 'rg_cpf'
