@@ -170,11 +170,11 @@ export default function FuncionarioForm() {
     setForm((atual) => ({ ...atual, [campo]: valor }))
   }
 
-  const jornadaBloqueada = form.tipo_contrato === 'PJ' || form.tipo_contrato === 'Empreita'
+  const jornadaBloqueada = form.tipo_contrato === 'Empreita'
   const casado = form.estado_civil === 'Casado(a)' || form.estado_civil === 'União Estável'
 
   function setTipoContrato(valor: TipoContrato) {
-    const bloqueia = valor === 'PJ' || valor === 'Empreita'
+    const bloqueia = valor === 'Empreita'
     setForm((atual) => ({
       ...atual,
       tipo_contrato: valor,
@@ -688,9 +688,7 @@ export default function FuncionarioForm() {
             >
               <option value="">Selecione...</option>
               <option value="CLT">CLT</option>
-              <option value="PJ">PJ</option>
               <option value="Estágio">Estágio</option>
-              <option value="Temporário">Temporário</option>
               <option value="Diarista">Diarista</option>
               <option value="Empreita">Empreita</option>
             </select>

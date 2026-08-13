@@ -25,7 +25,7 @@ import type {
 } from '../../lib/types'
 
 const tipoDocumentoLabel: Record<TipoDocumentoAssinatura, string> = {
-  ficha_registro: 'Ficha de Registro',
+  ficha_registro: 'Ficha de Cadastro de Empregado',
   contrato_experiencia: 'Contrato de Experiência',
   contrato_prestacao: 'Contrato de Prestação de Serviços',
   ficha_epi: 'Ficha de EPI',
@@ -188,7 +188,7 @@ export default function FuncionarioDetalhes() {
 
   function nomeArquivo(tipo: TipoDocumentoAssinatura) {
     const prefixos: Record<TipoDocumentoAssinatura, string> = {
-      ficha_registro: 'ficha-registro',
+      ficha_registro: 'ficha-cadastro-empregado',
       contrato_experiencia: 'contrato-experiencia',
       contrato_prestacao: 'contrato-prestacao-servicos',
       ficha_epi: 'ficha-epi',
@@ -421,9 +421,11 @@ export default function FuncionarioDetalhes() {
         {(
           [
             'ficha_registro',
-            ...(funcionario.tipo_contrato !== 'PJ' && funcionario.tipo_contrato !== 'Empreita' ? (['contrato_experiencia'] as const) : []),
-            ...(funcionario.tipo_contrato === 'PJ' || funcionario.tipo_contrato === 'Empreita' ? (['contrato_prestacao'] as const) : []),
-            'ficha_epi',
+            ...(funcionario.tipo_contrato !== 'Empreita' && funcionario.tipo_contrato !== 'Estágio'
+              ? (['contrato_experiencia'] as const)
+              : []),
+            ...(funcionario.tipo_contrato === 'Empreita' ? (['contrato_prestacao'] as const) : []),
+            ...(funcionario.tipo_contrato !== 'Estágio' ? (['ficha_epi'] as const) : []),
           ] as TipoDocumentoAssinatura[]
         ).map((tipo) => (
           <div key={tipo} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>

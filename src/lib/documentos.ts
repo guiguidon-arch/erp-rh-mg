@@ -7,7 +7,7 @@ export const categoriaLabel: Record<CategoriaDocumento, string> = {
   comprovante: 'Comprovante',
   aso: 'ASO',
   cnh: 'CNH',
-  ficha_registro: 'Ficha de registro',
+  ficha_registro: 'Ficha de cadastro de empregado',
   contrato_experiencia: 'Contrato de experiência',
   contrato_prestacao_servicos: 'Contrato de prestação de serviços',
   ficha_epi: 'Ficha de EPI',

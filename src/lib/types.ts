@@ -10,7 +10,7 @@ export interface Obra {
 }
 
 export type StatusFuncionario = 'ativo' | 'afastado' | 'ferias' | 'desligado'
-export type TipoContrato = 'CLT' | 'PJ' | 'Estágio' | 'Temporário' | 'Diarista' | 'Empreita'
+export type TipoContrato = 'CLT' | 'Estágio' | 'Diarista' | 'Empreita'
 export type TipoConta = 'corrente' | 'poupanca' | 'salario'
 export type RacaCor = 'Branca' | 'Preta' | 'Parda' | 'Amarela' | 'Indígena' | 'Não informado'
 export type EstadoCivil = 'Solteiro(a)' | 'Casado(a)' | 'Divorciado(a)' | 'Viúvo(a)' | 'União Estável'
