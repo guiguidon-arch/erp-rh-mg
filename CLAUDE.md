@@ -150,6 +150,24 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   "Sua sessão expirou. Faça login novamente." em vez do erro técnico cru.
 - [ ] Sugerido ao usuário: criar um usuário Supabase Auth separado para o
   funcionário que vai testar (em vez de compartilhar a própria senha)
-- [ ] Próximo: item 4 do roadmap (importador de ponto) — usuário já mandou um
+- [x] Item 5 do roadmap concluído (código pronto, falta configuração do
+  usuário): Integração com a Autentique para envio de documentos gerados para
+  assinatura eletrônica. Como o token da API da Autentique é uma credencial
+  privada (diferente da anon key do Supabase, não pode ficar exposta no
+  bundle do site), a integração passa por duas Vercel Functions
+  (`api/autentique-enviar.ts` e `api/autentique-status.ts`) que guardam o
+  token no servidor (env var `AUTENTIQUE_API_TOKEN`, sem prefixo `VITE_`).
+  Botão "Enviar p/ assinatura" ao lado de cada "Baixar PDF" (mantido como
+  alternativa manual, conforme o CLAUDE.md original pede) nas páginas de
+  funcionário e de prestador. Histórico de envios em nova tabela
+  `envios_assinatura` (migration `0009_envios_assinatura.sql`), com botão
+  "Verificar status" que consulta a Autentique sob demanda (sem webhook).
+  Signatários: funcionário/prestador + Guilherme (representante da empresa,
+  e-mail fixo em `src/lib/empresa.ts`), exceto na Ficha de EPI (só o
+  funcionário assina). Testemunhas não entram no fluxo digital por enquanto.
+  **Pendente do usuário**: criar conta na Autentique, gerar API key, e
+  configurar `AUTENTIQUE_API_TOKEN` nas variáveis de ambiente da Vercel — não
+  testado de ponta a ponta ainda (não tenho a chave real).
+- [ ] Próximo: item 6 do roadmap (importador de ponto) — usuário já mandou um
   exemplo de folha de ponto (.xlsx) em `C:\Users\guilh\Downloads\`, ainda não
   analisado
