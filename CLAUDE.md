@@ -178,6 +178,19 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   Token da Autentique confirmado funcionando em produção (testado via
   chamada à function com ID falso — a Autentique respondeu, provando que o
   token está configurado corretamente na Vercel).
+- [x] Repasse dos tipos de contratação com o usuário (migration
+  `0010_tipos_contrato_enxutos.sql`): tipos agora são só CLT, Estágio,
+  Diarista e Empreita. "Temporário" foi absorvido por "Diarista" (dados
+  convertidos na migration). "PJ" foi removido de funcionários — pessoa
+  jurídica é sempre cadastrada em Prestadores (funcionários que estavam como
+  PJ tiveram o tipo zerado; recadastrar como prestador se necessário).
+  "Ficha de Registro" renomeada para "Ficha de Cadastro de Empregado" em
+  toda a interface (valor interno `ficha_registro` mantido no banco).
+  Documentos por tipo: CLT e Diarista = ficha de cadastro + contrato de
+  experiência + ficha de EPI; Estágio = SÓ ficha de cadastro (contrato vem
+  da instituição de ensino, e sem ficha de EPI por decisão do usuário);
+  Empreita = ficha de cadastro + contrato de prestação de serviços (PF) +
+  ficha de EPI. Trava de jornada "Não se aplica" agora só para Empreita.
 - [ ] Próximo: item 6 do roadmap (importador de ponto) — usuário já mandou um
   exemplo de folha de ponto (.xlsx) em `C:\Users\guilh\Downloads\`, ainda não
   analisado
