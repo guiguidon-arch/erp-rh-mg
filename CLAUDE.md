@@ -191,6 +191,25 @@ Sistema de RH para empresa brasileira com 11–50 funcionários. O responsável 
   da instituição de ensino, e sem ficha de EPI por decisão do usuário);
   Empreita = ficha de cadastro + contrato de prestação de serviços (PF) +
   ficha de EPI. Trava de jornada "Não se aplica" agora só para Empreita.
+- [x] Arquivamento automático dos PDFs assinados (migration
+  `0011_arquivo_assinado.sql`): ao clicar "Verificar status" e o documento
+  estar assinado, o sistema baixa o PDF assinado da Autentique (via
+  `api/autentique-status.ts` com `incluirArquivo`), salva no bucket
+  `documentos-funcionarios` (funcionário: também aparece na seção Documentos
+  como "(assinado)"; prestador: caminho guardado em
+  `envios_assinatura.storage_path_assinado`). "Baixar assinado" prefere a
+  cópia arquivada no sistema.
+- [x] Integração opcional com SharePoint Online (`api/sharepoint-upload.ts`,
+  via Microsoft Graph com client credentials): quando configurada, toda
+  cópia assinada arquivada também sobe para uma pasta do SharePoint da
+  empresa. Variáveis na Vercel: `SHAREPOINT_TENANT_ID`,
+  `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_CLIENT_SECRET`, `SHAREPOINT_SITE_URL`
+  (ex.: https://mgemp.sharepoint.com/sites/NomeDoSite) e opcional
+  `SHAREPOINT_PASTA` (padrão "ERP RH"). Sem as variáveis, a integração fica
+  dormente (endpoint responde `configurado: false` e o app segue normal).
+  Requer registro de aplicativo no Microsoft Entra (Azure) com permissão de
+  aplicação Sites.ReadWrite.All + consentimento de admin — o usuário ainda
+  vai fazer essa configuração.
 - [ ] Próximo: item 6 do roadmap (importador de ponto) — usuário já mandou um
   exemplo de folha de ponto (.xlsx) em `C:\Users\guilh\Downloads\`, ainda não
   analisado
