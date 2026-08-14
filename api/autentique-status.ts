@@ -12,7 +12,7 @@ const QUERY = `
   }
 `
 
-export default async function handler(req: { method?: string; body: { documentId?: string } }, res: any) {
+export default async function handler(req: { method?: string; body: { documentId?: string; incluirArquivo?: boolean } }, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método não permitido.' })
     return
@@ -63,7 +63,16 @@ export default async function handler(req: { method?: string; body: { documentId
       status = 'assinado'
     }
 
-    res.status(200).json({ status, linkDocumento: documento.files?.signed ?? null })
+    // Quando pedido, baixa o PDF assinado para o app arquivar no Storage do sistema
+    let arquivoBase64: string | null = null
+    if (req.body?.incluirArquivo && status === 'assinado' && documento.files?.signed) {
+      const arquivo = await fetch(documento.files.signed)
+      if (arquivo.ok) {
+        arquivoBase64 = Buffer.from(await arquivo.arrayBuffer()).toString('base64')
+      }
+    }
+
+    res.status(200).json({ status, linkDocumento: documento.files?.signed ?? null, arquivoBase64 })
   } catch (erro) {
     res.status(500).json({ error: erro instanceof Error ? erro.message : 'Erro ao consultar status na Autentique.' })
   }

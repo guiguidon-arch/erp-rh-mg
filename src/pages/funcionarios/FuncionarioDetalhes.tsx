@@ -6,7 +6,13 @@ import { formatarData } from '../../lib/formatters'
 import { categoriaLabel, statusVencimento } from '../../lib/documentos'
 import { EPIS_PADRAO } from '../../lib/episPadrao'
 import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
-import { enviarParaAssinatura, telefoneParaWhatsapp, verificarStatusAssinatura, type Signatario } from '../../lib/autentique'
+import {
+  base64ParaBlob,
+  enviarParaAssinatura,
+  telefoneParaWhatsapp,
+  verificarStatusAssinatura,
+  type Signatario,
+} from '../../lib/autentique'
 import { EMPRESA } from '../../lib/empresa'
 import { FichaRegistro } from '../../pdf/FichaRegistro'
 import { ContratoExperiencia } from '../../pdf/ContratoExperiencia'
@@ -271,11 +277,44 @@ export default function FuncionarioDetalhes() {
     setError(null)
 
     try {
-      const { status, linkDocumento } = await verificarStatusAssinatura(envio.autentique_document_id)
+      const precisaArquivar = !envio.storage_path_assinado
+      const { status, linkDocumento, arquivoBase64 } = await verificarStatusAssinatura(
+        envio.autentique_document_id,
+        precisaArquivar
+      )
+
+      // Arquiva o PDF assinado no Storage e na seção Documentos do funcionário
+      let storagePathAssinado = envio.storage_path_assinado
+      if (status === 'assinado' && arquivoBase64 && !storagePathAssinado) {
+        const blob = await base64ParaBlob(arquivoBase64)
+        const caminho = `${id}/assinados/${envio.tipo_documento}-${Date.now()}.pdf`
+
+        const { error: erroUpload } = await supabase.storage
+          .from('documentos-funcionarios')
+          .upload(caminho, blob, { contentType: 'application/pdf' })
+
+        if (erroUpload) {
+          setError(`Status atualizado, mas falhou ao arquivar o PDF assinado: ${erroUpload.message}`)
+        } else {
+          storagePathAssinado = caminho
+          const categoriaPorTipo: Record<TipoDocumentoAssinatura, CategoriaDocumento> = {
+            ficha_registro: 'ficha_registro',
+            contrato_experiencia: 'contrato_experiencia',
+            contrato_prestacao: 'contrato_prestacao_servicos',
+            ficha_epi: 'ficha_epi',
+          }
+          await supabase.from('documentos_funcionario').insert({
+            funcionario_id: id,
+            categoria: categoriaPorTipo[envio.tipo_documento],
+            nome_arquivo: `${tipoDocumentoLabel[envio.tipo_documento]} (assinado).pdf`,
+            storage_path: caminho,
+          })
+        }
+      }
 
       const { error: erroUpdate } = await supabase
         .from('envios_assinatura')
-        .update({ status, link_documento: linkDocumento })
+        .update({ status, link_documento: linkDocumento, storage_path_assinado: storagePathAssinado })
         .eq('id', envio.id)
 
       if (erroUpdate) {
@@ -288,6 +327,21 @@ export default function FuncionarioDetalhes() {
       setError(e instanceof Error ? e.message : 'Erro ao verificar status.')
     } finally {
       setVerificandoStatus(null)
+    }
+  }
+
+  async function baixarAssinado(envio: EnvioAssinatura) {
+    if (envio.storage_path_assinado) {
+      const { data, error } = await supabase.storage
+        .from('documentos-funcionarios')
+        .createSignedUrl(envio.storage_path_assinado, 60)
+      if (data && !error) {
+        window.open(data.signedUrl, '_blank')
+        return
+      }
+    }
+    if (envio.link_documento) {
+      window.open(envio.link_documento, '_blank')
     }
   }
 
@@ -467,10 +521,10 @@ export default function FuncionarioDetalhes() {
                       >
                         {verificandoStatus === envio.id ? 'Verificando...' : 'Verificar status'}
                       </button>
-                      {envio.link_documento && (
-                        <a href={envio.link_documento} target="_blank" rel="noreferrer">
+                      {(envio.storage_path_assinado || envio.link_documento) && (
+                        <button type="button" onClick={() => baixarAssinado(envio)}>
                           Baixar assinado
-                        </a>
+                        </button>
                       )}
                     </td>
                   </tr>

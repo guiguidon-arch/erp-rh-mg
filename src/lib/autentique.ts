@@ -53,11 +53,11 @@ export async function enviarParaAssinatura(pdfBlob: Blob, nomeDocumento: string,
   return dados as { documentId: string; signatures: Array<{ email: string; link: { short_link: string } | null }> }
 }
 
-export async function verificarStatusAssinatura(documentId: string) {
+export async function verificarStatusAssinatura(documentId: string, incluirArquivo = false) {
   const resposta = await fetch('/api/autentique-status', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documentId }),
+    body: JSON.stringify({ documentId, incluirArquivo }),
   })
 
   const dados = await resposta.json()
@@ -66,5 +66,14 @@ export async function verificarStatusAssinatura(documentId: string) {
     throw new Error(dados.error || 'Erro ao verificar status.')
   }
 
-  return dados as { status: 'enviado' | 'assinado' | 'rejeitado'; linkDocumento: string | null }
+  return dados as {
+    status: 'enviado' | 'assinado' | 'rejeitado'
+    linkDocumento: string | null
+    arquivoBase64: string | null
+  }
+}
+
+export async function base64ParaBlob(base64: string): Promise<Blob> {
+  const resposta = await fetch(`data:application/pdf;base64,${base64}`)
+  return resposta.blob()
 }

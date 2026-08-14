@@ -146,6 +146,7 @@ export interface EnvioAssinatura {
   autentique_document_id: string
   status: StatusEnvioAssinatura
   link_documento: string | null
+  storage_path_assinado: string | null
   enviado_por: string | null
   created_at: string
   updated_at: string

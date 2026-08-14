@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { formatarCnpj } from '../../lib/cnpj'
 import { formatarData } from '../../lib/formatters'
 import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
-import { enviarParaAssinatura, verificarStatusAssinatura } from '../../lib/autentique'
+import { base64ParaBlob, enviarParaAssinatura, verificarStatusAssinatura } from '../../lib/autentique'
 import { EMPRESA } from '../../lib/empresa'
 import { ContratoPrestacaoServicos } from '../../pdf/ContratoPrestacaoServicos'
 import type { ContratoPrestador, EnvioAssinatura, Obra, Prestador } from '../../lib/types'
@@ -166,11 +166,32 @@ export default function PrestadorDetalhes() {
     setError(null)
 
     try {
-      const { status, linkDocumento } = await verificarStatusAssinatura(envio.autentique_document_id)
+      const precisaArquivar = !envio.storage_path_assinado
+      const { status, linkDocumento, arquivoBase64 } = await verificarStatusAssinatura(
+        envio.autentique_document_id,
+        precisaArquivar
+      )
+
+      // Arquiva o PDF assinado no Storage do sistema
+      let storagePathAssinado = envio.storage_path_assinado
+      if (status === 'assinado' && arquivoBase64 && !storagePathAssinado) {
+        const blob = await base64ParaBlob(arquivoBase64)
+        const caminho = `prestadores/${id}/assinados/contrato-${Date.now()}.pdf`
+
+        const { error: erroUpload } = await supabase.storage
+          .from('documentos-funcionarios')
+          .upload(caminho, blob, { contentType: 'application/pdf' })
+
+        if (erroUpload) {
+          setError(`Status atualizado, mas falhou ao arquivar o PDF assinado: ${erroUpload.message}`)
+        } else {
+          storagePathAssinado = caminho
+        }
+      }
 
       const { error: erroUpdate } = await supabase
         .from('envios_assinatura')
-        .update({ status, link_documento: linkDocumento })
+        .update({ status, link_documento: linkDocumento, storage_path_assinado: storagePathAssinado })
         .eq('id', envio.id)
 
       if (erroUpdate) {
@@ -183,6 +204,21 @@ export default function PrestadorDetalhes() {
       setError(e instanceof Error ? e.message : 'Erro ao verificar status.')
     } finally {
       setVerificandoStatus(null)
+    }
+  }
+
+  async function baixarAssinado(envio: EnvioAssinatura) {
+    if (envio.storage_path_assinado) {
+      const { data, error } = await supabase.storage
+        .from('documentos-funcionarios')
+        .createSignedUrl(envio.storage_path_assinado, 60)
+      if (data && !error) {
+        window.open(data.signedUrl, '_blank')
+        return
+      }
+    }
+    if (envio.link_documento) {
+      window.open(envio.link_documento, '_blank')
     }
   }
 
@@ -368,10 +404,10 @@ export default function PrestadorDetalhes() {
                     <button type="button" disabled={verificandoStatus !== null} onClick={() => atualizarStatusEnvio(envio)}>
                       {verificandoStatus === envio.id ? 'Verificando...' : 'Verificar status'}
                     </button>
-                    {envio.link_documento && (
-                      <a href={envio.link_documento} target="_blank" rel="noreferrer">
+                    {(envio.storage_path_assinado || envio.link_documento) && (
+                      <button type="button" onClick={() => baixarAssinado(envio)}>
                         Baixar assinado
-                      </a>
+                      </button>
                     )}
                   </td>
                 </tr>
