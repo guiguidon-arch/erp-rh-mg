@@ -77,3 +77,23 @@ export async function base64ParaBlob(base64: string): Promise<Blob> {
   const resposta = await fetch(`data:application/pdf;base64,${base64}`)
   return resposta.blob()
 }
+
+/**
+ * Envia um PDF ao SharePoint da empresa (integração opcional).
+ * Retorna false se a integração não estiver configurada no servidor.
+ */
+export async function enviarParaSharePoint(pdfBase64: string, nomeArquivo: string): Promise<boolean> {
+  const resposta = await fetch('/api/sharepoint-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nomeArquivo, pdfBase64 }),
+  })
+
+  const dados = await resposta.json()
+
+  if (!resposta.ok) {
+    throw new Error(dados.error || 'Erro ao enviar para o SharePoint.')
+  }
+
+  return dados.configurado === true
+}

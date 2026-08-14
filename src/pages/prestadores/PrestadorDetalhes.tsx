@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { formatarCnpj } from '../../lib/cnpj'
 import { formatarData } from '../../lib/formatters'
 import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
-import { base64ParaBlob, enviarParaAssinatura, verificarStatusAssinatura } from '../../lib/autentique'
+import { base64ParaBlob, enviarParaAssinatura, enviarParaSharePoint, verificarStatusAssinatura } from '../../lib/autentique'
 import { EMPRESA } from '../../lib/empresa'
 import { ContratoPrestacaoServicos } from '../../pdf/ContratoPrestacaoServicos'
 import type { ContratoPrestador, EnvioAssinatura, Obra, Prestador } from '../../lib/types'
@@ -186,6 +186,18 @@ export default function PrestadorDetalhes() {
           setError(`Status atualizado, mas falhou ao arquivar o PDF assinado: ${erroUpload.message}`)
         } else {
           storagePathAssinado = caminho
+
+          // Cópia automática no SharePoint da empresa (se a integração estiver configurada)
+          try {
+            await enviarParaSharePoint(
+              arquivoBase64,
+              `Contrato de Prestação de Serviços - ${prestador?.razao_social ?? 'prestador'} (assinado).pdf`
+            )
+          } catch (erroSp) {
+            setError(
+              `Documento arquivado no sistema, mas falhou o envio ao SharePoint: ${erroSp instanceof Error ? erroSp.message : 'erro desconhecido'}`
+            )
+          }
         }
       }
 

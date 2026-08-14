@@ -9,6 +9,7 @@ import { gerarBlobPdf, gerarEAbrirPdf } from '../../lib/gerarPdf'
 import {
   base64ParaBlob,
   enviarParaAssinatura,
+  enviarParaSharePoint,
   telefoneParaWhatsapp,
   verificarStatusAssinatura,
   type Signatario,
@@ -309,6 +310,18 @@ export default function FuncionarioDetalhes() {
             nome_arquivo: `${tipoDocumentoLabel[envio.tipo_documento]} (assinado).pdf`,
             storage_path: caminho,
           })
+
+          // Cópia automática no SharePoint da empresa (se a integração estiver configurada)
+          try {
+            await enviarParaSharePoint(
+              arquivoBase64,
+              `${tipoDocumentoLabel[envio.tipo_documento]} - ${funcionario?.nome ?? 'funcionario'} (assinado).pdf`
+            )
+          } catch (erroSp) {
+            setError(
+              `Documento arquivado no sistema, mas falhou o envio ao SharePoint: ${erroSp instanceof Error ? erroSp.message : 'erro desconhecido'}`
+            )
+          }
         }
       }
 
